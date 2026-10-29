@@ -123,6 +123,16 @@ final class AppModel: ObservableObject {
             openInCursor(folder: QuickAdd.localFolder(ticket.deepLink))
             return
         }
+        // Claude Code goes back to wherever the session runs: Cursor's terminal (that project's window),
+        // the Claude desktop app, or the terminal app it was started from.
+        if ticket.tool == .claudeCode, ticket.source == .automatic {
+            switch ticket.hostApp {
+            case Self.cursorID: openInCursor(folder: QuickAdd.localFolder(ticket.deepLink))
+            case let app?: openApp(app, fallback: "https://claude.ai")
+            case nil: openApp("com.anthropic.claudefordesktop", fallback: "https://claude.ai")
+            }
+            return
+        }
         if let url = URL(string: ticket.deepLink), url.scheme != nil {
             NSWorkspace.shared.open(url)
             return
@@ -136,9 +146,11 @@ final class AppModel: ObservableObject {
         }
     }
 
+    static let cursorID = "com.todesktop.230313mzl4w4u92"
+
     /// Opening a folder that's already open in Cursor brings that window to the front.
     private func openInCursor(folder: URL?) {
-        guard let cursor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.todesktop.230313mzl4w4u92") else { return }
+        guard let cursor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.cursorID) else { return }
         if let folder, FileManager.default.fileExists(atPath: folder.path) {
             NSWorkspace.shared.open([folder], withApplicationAt: cursor, configuration: NSWorkspace.OpenConfiguration())
         } else {

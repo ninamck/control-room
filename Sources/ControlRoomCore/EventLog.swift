@@ -12,6 +12,8 @@ enum EventLog {
         if let tool = payload["tool_name"] as? String { line += " tool=\(tool)" }
         if let status = payload["status"] as? String { line += " status=\(status)" }
         if let conversation = payload["conversation_id"] as? String { line += " conversation=\(conversation.prefix(8))" }
+        if let session = payload["session_id"] as? String, payload["conversation_id"] == nil { line += " session=\(session.prefix(8))" }
+        if let type = payload["notification_type"] as? String { line += " type=\(type)" }
         if let note { line += " (\(note))" }
 
         lock.lock()

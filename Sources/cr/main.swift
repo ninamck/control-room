@@ -18,6 +18,8 @@ Control Room
 
   cr install-cursor-hooks          send Cursor's agents to Control Room automatically
   cr remove-cursor-hooks           stop sending them
+  cr install-claude-hooks          send Claude Code sessions to Control Room automatically
+  cr remove-claude-hooks           stop sending them
 
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
@@ -176,6 +178,16 @@ case "remove-cursor-hooks":
     do {
         try CursorHooks.remove()
         print("Removed. Cursor's agents won't be sent to Control Room any more.")
+    } catch { fail("Couldn't remove: \(error.localizedDescription)") }
+case "install-claude-hooks":
+    do {
+        try ClaudeCodeHooks.install()
+        print("Claude Code sessions will now show up in Control Room. New sessions pick this up straight away; ones already open pick it up from their next message.")
+    } catch { fail("Couldn't install: \(error.localizedDescription)") }
+case "remove-claude-hooks":
+    do {
+        try ClaudeCodeHooks.remove()
+        print("Removed. Claude Code sessions won't be sent to Control Room any more.")
     } catch { fail("Couldn't remove: \(error.localizedDescription)") }
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)

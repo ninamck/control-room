@@ -115,6 +115,8 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var externalId: String?
     /// The chat's own name in the tool, like Cursor's "Predictive ordering UI sweep".
     public var chatName: String?
+    /// The app the session runs in, as a bundle id (Claude desktop, Cursor, Terminal), so Open can go there.
+    public var hostApp: String?
     /// For automatic tickets while working: what the agent is doing right now, like "Running npm test".
     public var activity: String?
     /// When that activity was last reported.

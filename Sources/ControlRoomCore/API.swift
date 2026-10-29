@@ -7,6 +7,8 @@ import Foundation
 ///   POST /tickets                  add a ticket
 ///   POST /tickets/{id}/{action}    later, park, done, still-running, needs-you, blocked
 ///   POST /tickets/{id}/drop        delete it
+///   POST /feeds/cursor             a Cursor hook event
+///   POST /feeds/claude-code        a Claude Code hook event
 public struct API: Sendable {
     let store: TicketStore
     let token: String
@@ -70,6 +72,12 @@ public struct API: Sendable {
                 }
                 EventLog.record(payload)
                 return json(200, try CursorFeed.handle(payload, store: store))
+            case ("POST", 2) where parts == ["feeds", "claude-code"]:
+                guard let payload = try JSONSerialization.jsonObject(with: request.body) as? [String: Any] else {
+                    return error(400, "Expected a Claude Code hook event.")
+                }
+                EventLog.record(payload)
+                return json(200, try ClaudeCodeFeed.handle(payload, store: store))
             case ("POST", 3) where parts[0] == "tickets":
                 if parts[2] == "drop" { return json(200, try store.drop(parts[1])) }
                 guard let action = TicketAction(rawValue: parts[2]) else { return error(404, "Unknown action \(parts[2]).") }

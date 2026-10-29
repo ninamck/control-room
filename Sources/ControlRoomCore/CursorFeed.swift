@@ -26,7 +26,7 @@ public enum CursorFeed {
         // Looked up before taking the store's lock, so a slow read never holds up other events.
         // Cursor names a chat after its first reply, so keep asking until it has one.
         let cursorName = CursorChatNames.name(for: conversation)
-        let chatName = cursorName ?? transcript?.firstQuestion().flatMap(title(from:))
+        let chatName = cursorName ?? transcript?.firstQuestion().flatMap(FeedText.title(from:))
 
         return try store.update { tickets, now in
             func newTicket(title: String) -> Int {
@@ -49,7 +49,7 @@ public enum CursorFeed {
             /// The ticket for this conversation, made now if it started before the hooks were installed.
             func ticketIndex() -> Int {
                 if let i = tickets.firstIndex(where: { $0.externalId == key }) { return i }
-                return newTicket(title: transcript?.lastQuestion().flatMap(title(from:)) ?? fallbackTitle)
+                return newTicket(title: transcript?.lastQuestion().flatMap(FeedText.title(from:)) ?? fallbackTitle)
             }
             let known = tickets.contains { $0.externalId == key }
             func doing(_ i: Int, _ what: String?) {
@@ -61,14 +61,14 @@ public enum CursorFeed {
             case "beforeSubmitPrompt":
                 let prompt = payload["prompt"] as? String ?? ""
                 guard known else {
-                    let asked = title(from: prompt) ?? transcript?.lastQuestion().flatMap(title(from:)) ?? fallbackTitle
+                    let asked = FeedText.title(from: prompt) ?? transcript?.lastQuestion().flatMap(FeedText.title(from:)) ?? fallbackTitle
                     let i = newTicket(title: asked)
                     doing(i, "Reading your message")
                     return tickets[i]
                 }
                 let i = ticketIndex()
                 // A message that's only a pasted page element keeps the title it had.
-                if let asked = title(from: prompt) { tickets[i].title = asked }
+                if let asked = FeedText.title(from: prompt) { tickets[i].title = asked }
                 tickets[i].questionType = .none
                 doing(i, "Reading your message")
                 try tickets[i].apply(.stillRunning, now: now)
@@ -84,8 +84,8 @@ public enum CursorFeed {
             case "preToolUse":
                 let i = ticketIndex()
                 let input = payload["tool_input"] as? [String: Any] ?? [:]
-                guard isQuestion(payload["tool_name"]) else {
-                    doing(i, activity(tool: payload["tool_name"] as? String ?? "", input: input))
+                guard FeedText.isQuestion(payload["tool_name"]) else {
+                    doing(i, FeedText.activity(tool: payload["tool_name"] as? String ?? "", input: input))
                     // Using any other tool means it's busy, whatever it was before.
                     if tickets[i].state != .working {
                         tickets[i].questionType = .none
@@ -94,8 +94,8 @@ public enum CursorFeed {
                     return tickets[i]
                 }
                 doing(i, nil)
-                if let question = questionText(input) { tickets[i].lastMessage = question }
-                let options = optionLabels(input)
+                if let question = FeedText.questionText(input) { tickets[i].lastMessage = question }
+                let options = FeedText.optionLabels(input)
                 tickets[i].questionType = options.isEmpty ? .free : .choice(options)
                 try tickets[i].apply(.needsYou, now: now)
                 return tickets[i]
@@ -104,7 +104,7 @@ public enum CursorFeed {
                 let i = ticketIndex()
                 // Between tools the agent is working out what to do next.
                 doing(i, "Thinking")
-                guard isQuestion(payload["tool_name"]), tickets[i].state == .needsYou else { return tickets[i] }
+                guard FeedText.isQuestion(payload["tool_name"]), tickets[i].state == .needsYou else { return tickets[i] }
                 tickets[i].questionType = .none
                 try tickets[i].apply(.stillRunning, now: now)
                 return tickets[i]
@@ -113,7 +113,7 @@ public enum CursorFeed {
                 let i = ticketIndex()
                 doing(i, nil)
                 // The transcript is complete by now, so it's the surest source of what she last asked.
-                if let asked = transcript?.lastQuestion().flatMap(title(from:)) { tickets[i].title = asked }
+                if let asked = transcript?.lastQuestion().flatMap(FeedText.title(from:)) { tickets[i].title = asked }
                 if tickets[i].lastMessage.isEmpty, let reply = transcript?.lastReply() { tickets[i].lastMessage = reply }
                 switch payload["status"] as? String {
                 case "error":
@@ -140,115 +140,6 @@ public enum CursorFeed {
     }
 
     static let fallbackTitle = "Cursor agent"
-
-    /// Messages Cursor sends on its own, in the same form as Nina's, e.g. when a background task finishes.
-    static let automaticFollowUps = ["Briefly inform the user about the task result"]
-
-    /// Lines Cursor adds when Nina points at something on a page. Not her words.
-    static let pastedElementPrefixes = ["DOM Path:", "Position:", "HTML Element:", "React Component:"]
-
-    /// A row-length title from what Nina asked, or nil if the message has none of her own words.
-    /// A bare link becomes its readable last part.
-    static func title(from prompt: String) -> String? {
-        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        if automaticFollowUps.contains(where: trimmed.hasPrefix) { return nil }
-        let line = prompt.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .lazy
-            .compactMap { line -> String? in
-                if line.isEmpty { return nil }
-                // Her words follow the pasted element on the same line: "...</div> will this default to open?"
-                if line.hasPrefix("HTML Element:") { return wordsAfterElement(line) }
-                return pastedElementPrefixes.contains(where: line.hasPrefix) ? nil : line
-            }
-            .first
-        guard let line else { return nil }
-        if let readable = readableLink(line) { return readable }
-        return line.count > 80 ? String(line.prefix(79)) + "…" : line
-    }
-
-    /// Text after the last closing tag of a pasted element, if any.
-    static func wordsAfterElement(_ line: String) -> String? {
-        guard let close = line.range(of: "</", options: .backwards),
-              let end = line.range(of: ">", range: close.upperBound..<line.endIndex) else { return nil }
-        let words = line[end.upperBound...].trimmingCharacters(in: .whitespaces)
-        return words.isEmpty ? nil : words
-    }
-
-    /// "https://linear.app/x/project/predictive-ordering-ai-rules-and-ui-sweep-8c6" → "Predictive ordering ai rules and ui sweep".
-    static func readableLink(_ text: String) -> String? {
-        guard !text.contains(" "), let url = URL(string: text), url.scheme?.hasPrefix("http") == true else { return nil }
-        var words = url.lastPathComponent.split(whereSeparator: { $0 == "-" || $0 == "_" }).map(String.init)
-        // Drop a trailing id like "8c6" or "a1b2c3".
-        if let last = words.last, words.count > 1, last.count <= 12, last.contains(where: \.isNumber) { words.removeLast() }
-        let phrase = words.joined(separator: " ")
-        guard !phrase.isEmpty else { return url.host }
-        return phrase.prefix(1).uppercased() + phrase.dropFirst()
-    }
-
-    /// What a tool call looks like to Nina: "Running npm test", "Editing basket.tsx", "Searching the code".
-    static func activity(tool: String, input: [String: Any]) -> String {
-        let file = (input["file_path"] as? String ?? input["target_file"] as? String ?? input["path"] as? String)
-            .map { URL(fileURLWithPath: $0).lastPathComponent }
-        let name = tool.lowercased()
-        switch name {
-        case "shell", "terminal", "run_terminal_cmd":
-            return command(input["command"] as? String).map { "Running \($0)" } ?? "Running a command"
-        case "read", "read_file":
-            return file.map { "Reading \($0)" } ?? "Reading files"
-        case "write", "edit", "multiedit", "strreplace", "str_replace", "search_replace", "applypatch", "apply_patch", "edit_file":
-            return file.map { "Editing \($0)" } ?? "Editing files"
-        case "delete", "delete_file":
-            return file.map { "Deleting \($0)" } ?? "Deleting a file"
-        case "grep", "glob", "search", "codebase_search", "semanticsearch", "list_dir", "ls":
-            return "Searching the code"
-        case "websearch", "web_search", "webfetch", "fetch":
-            return "Looking something up online"
-        case "task":
-            return "Handing part of it to a helper"
-        case "todowrite", "todo_write":
-            return "Updating its plan"
-        case "readlints", "read_lints":
-            return "Checking for errors"
-        default:
-            if name.hasPrefix("mcp") { return "Using \(tool.split(separator: ":").last.map(String.init) ?? tool)" }
-            return "Using \(tool)"
-        }
-    }
-
-    /// The interesting part of a shell command: skips a leading `cd ... &&`, cut to fit.
-    static func command(_ raw: String?) -> String? {
-        guard var text = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
-        while text.hasPrefix("cd "), let and = text.range(of: "&&") {
-            text = text[and.upperBound...].trimmingCharacters(in: .whitespaces)
-        }
-        let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
-        return firstLine.count > 40 ? String(firstLine.prefix(39)) + "…" : firstLine
-    }
-
-    /// Cursor's tool for the multiple-choice Questions prompt. Its exact name isn't documented,
-    /// so match anything that sounds like asking.
-    static func isQuestion(_ toolName: Any?) -> Bool {
-        guard let name = (toolName as? String)?.lowercased() else { return false }
-        // Not just "ask": the subagent tool is called Task.
-        return name.contains("question") || name.hasPrefix("ask")
-    }
-
-    static func questionText(_ input: [String: Any]) -> String? {
-        if let q = input["question"] as? String { return q }
-        if let questions = input["questions"] as? [[String: Any]], let q = questions.first?["question"] as? String { return q }
-        return input["title"] as? String
-    }
-
-    static func optionLabels(_ input: [String: Any]) -> [String] {
-        let source = input["options"] ?? (input["questions"] as? [[String: Any]])?.first?["options"]
-        guard let options = source as? [Any] else { return [] }
-        return options.compactMap { option in
-            if let s = option as? String { return s }
-            if let d = option as? [String: Any] { return (d["label"] ?? d["text"] ?? d["title"]) as? String }
-            return nil
-        }
-    }
 }
 
 /// Reads the transcript file Cursor names in every hook event (`transcript_path`).
@@ -260,7 +151,7 @@ struct CursorTranscript {
     /// Nina's last message with words of her own in it, from its <user_query> block.
     func lastQuestion() -> String? {
         for message in messages().reversed() where message.role == "user" {
-            if let query = Self.userQuery(in: message.text), CursorFeed.title(from: query) != nil { return query }
+            if let query = Self.userQuery(in: message.text), FeedText.title(from: query) != nil { return query }
         }
         return nil
     }
@@ -276,7 +167,7 @@ struct CursorTranscript {
                   object["role"] as? String == "user",
                   let content = (object["message"] as? [String: Any])?["content"] as? [[String: Any]] else { continue }
             for part in content {
-                if let t = part["text"] as? String, let query = Self.userQuery(in: t), CursorFeed.title(from: query) != nil { return query }
+                if let t = part["text"] as? String, let query = Self.userQuery(in: t), FeedText.title(from: query) != nil { return query }
             }
         }
         return nil
@@ -327,7 +218,9 @@ public enum QuestionDetector {
             return .choice(options)
         }
         guard last.hasSuffix("?") else { return .none }
-        let opener = last.lowercased()
+        // Judge the question itself, not what comes before it: "Built it. Should I install the hooks?"
+        let sentence = last.components(separatedBy: CharacterSet(charactersIn: ".!")).last ?? last
+        let opener = sentence.trimmingCharacters(in: .whitespaces).lowercased()
         let yesNo = ["should i", "shall i", "do you", "can i", "is it", "are you", "would you", "want me", "ok to", "okay to"]
         return yesNo.contains(where: opener.hasPrefix) ? .yesNo : .free
     }

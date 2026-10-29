@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 2 of 9 done: the notch companion with its four faces, the drop-down panel growing out of the notch, and quick-add. Cursor's agents feed in automatically (brought forward from the plan at Nina's request). Claude Code's feed is next, step 3. Build order is in SPEC.md section 9.
+Step 3 of 9 done: the notch companion, panel and quick-add (step 2), plus Cursor's agents and Claude Code sessions feeding in automatically (step 3; Cursor brought forward at Nina's request). The board window is next, step 4. Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -57,6 +57,14 @@ Each ticket shows the chat's name from Cursor ("Predictive ordering UI sweep"), 
 
 The hook answers Cursor immediately and sends the event in the background, so it never slows an agent down. If Control Room is closed, events wait in `queue/cursor` and are applied when it opens. The last 300 events (names only, no message text) are in `feed-events.log` next to the tickets.
 
+## Claude Code sessions
+
+```
+./cr install-claude-hooks
+```
+
+Run this yourself in Terminal: it adds Control Room to Claude Code's own settings (`~/.claude/settings.json`, plus `~/.claude/hooks/control-room.sh`), which Claude Code won't edit for itself. Every Claude Code session then becomes a ticket, wherever it runs (the Claude desktop app, Cursor's terminal, Terminal): Working while it runs with what it's doing, Waiting on you when it finishes a reply, asks a question, wants permission or presents a plan, and Done when you mark it or close the session. The session's title from Claude Code names it. Open goes back to the app the session runs in. The hook prints nothing, so it never adds anything to your conversations. `./cr remove-claude-hooks` takes it out again. New sessions pick it up straight away; sessions already open may need restarting.
+
 ## Adding a tool feed
 
 A feed is anything that sends tickets to the local server. Every call carries the header `Authorization: Bearer <token from config.local.json>`.
@@ -64,7 +72,7 @@ A feed is anything that sends tickets to the local server. Every call carries th
 - `POST /tickets` with JSON like `{"tool": "devin", "title": "PR #412: approve to merge", "thread": "transfer-requests", "last_message": "...", "deep_link": "https://...", "source": "automatic", "question_type": {"type": "yes_no"}}`. Only `tool` and `title` are required. New tickets wait on you unless `"state": "working"` is sent.
 - `POST /tickets/{id}/{action}` where action is `later`, `park`, `done`, `still-running`, `needs-you`, `blocked` or `drop`.
 - `GET /tickets` returns everything, with Later and midnight rules already applied.
-- `POST /feeds/cursor` takes Cursor hook events as they are. `CursorFeed.swift` maps them to ticket states; a new feed for another tool should follow the same shape.
+- `POST /feeds/cursor` and `POST /feeds/claude-code` take each tool's hook events as they are. `CursorFeed.swift` and `ClaudeCodeFeed.swift` map them to ticket states, with shared wording rules in `FeedText.swift`; a new feed should follow the same shape and add its queue folder to `EventQueue.swift`.
 
 ## For Claude Code
 

@@ -142,15 +142,15 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     let pasted = "DOM Path: div#root > div.flex\nPosition: top=296px, left=147px\nHTML Element: <div class=\"x\">"
     let t = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": pasted]), store: store)
     #expect(t?.title == "When I click check out it scrolls")
-    #expect(CursorFeed.title(from: pasted + "\nmake this box smaller") == "make this box smaller")
+    #expect(FeedText.title(from: pasted + "\nmake this box smaller") == "make this box smaller")
 
     // Cursor puts her words straight after the element, on the same line.
     let inline = "DOM Path: div#root\nPosition: top=124px\nHTML Element: <div class=\"x\" data-cursor-element-id=\"cursor-el-45\">Predictive orders Empty basket</div> will this default to open the predictive orders always?"
-    #expect(CursorFeed.title(from: inline) == "will this default to open the predictive orders always?")
+    #expect(FeedText.title(from: inline) == "will this default to open the predictive orders always?")
 }
 
 @Test func cursorsOwnFollowUpsArentTitles() throws {
-    #expect(CursorFeed.title(from: "Briefly inform the user about the task result and perform any follow-up actions (if needed).") == nil)
+    #expect(FeedText.title(from: "Briefly inform the user about the task result and perform any follow-up actions (if needed).") == nil)
     let store = try makeStore()
     try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Does this go across to the variances?"]), store: store)
     let t = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Briefly inform the user about the task result and perform any follow-up actions (if needed)."]), store: store)
@@ -217,9 +217,9 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
 }
 
 @Test func linksBecomeReadableTitles() {
-    #expect(CursorFeed.title(from: "https://linear.app/edify-systems/project/predictive-ordering-ai-rules-and-ui-sweep-8c6")
+    #expect(FeedText.title(from: "https://linear.app/edify-systems/project/predictive-ordering-ai-rules-and-ui-sweep-8c6")
             == "Predictive ordering ai rules and ui sweep")
-    #expect(CursorFeed.title(from: "Fix the nav https://x.com/a") == "Fix the nav https://x.com/a")
+    #expect(FeedText.title(from: "Fix the nav https://x.com/a") == "Fix the nav https://x.com/a")
 }
 
 @Test func detectsQuestions() {
