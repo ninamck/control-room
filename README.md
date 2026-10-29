@@ -12,17 +12,24 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 1 of 9 done: the ticket store and local server, driven from the command line. Build order is in SPEC.md section 9.
+Step 2 of 9 done: the notch companion with its four faces, the drop-down panel, and quick-add. Tickets are manual only so far. Build order is in SPEC.md section 9.
 
 ## Running it
 
 Needs Xcode (already on Nina's Mac). In Terminal, from this folder:
 
 ```
-./cr serve
+./build-app
 ```
 
-Leave that window open. In a second Terminal window:
+That builds `build/Control Room.app` and opens it. After that you can open it from Finder like any app.
+
+- The face sits in the notch on the MacBook screen. Hover over it or click it to open the panel.
+- Control-Option-C opens and closes the panel from anywhere. Escape closes it.
+- When the lid is closed, or you're working on another screen, the face also appears in the menu bar. Click it there.
+- Quick-add: type "Grok · pricing research" and press Return. Paste a link and it becomes the ticket's Open link. If you don't name a tool, pick one from the squares that appear.
+
+The app runs the local server, so `./cr` works whenever the app is open:
 
 ```
 ./cr add "Recipe variants: modifier group nav" --tool cursor --thread edify-web
@@ -30,7 +37,7 @@ Leave that window open. In a second Terminal window:
 ./cr later 3f2a1b
 ```
 
-`./cr help` lists every command. The first run takes a minute to build.
+`./cr help` lists every command. `./cr serve` runs the server without the app; don't run both.
 
 ## Where things live
 
@@ -48,4 +55,10 @@ A feed is anything that sends tickets to the local server. Every call carries th
 
 ## For Claude Code
 
-Swift package, no outside dependencies. `Sources/ControlRoomCore` holds the ticket model, timing rules (`Rules.swift`), store and server; the app will host the same server from step 2. `swift test` runs the rules tests.
+Swift package, no outside dependencies.
+
+- `Sources/ControlRoomCore`: ticket model, timing rules (`Rules.swift`), quick-add parsing, store and server.
+- `Sources/ControlRoomApp`: the Mac app. `Companion.swift` places the notch window and menu bar fallback; `PanelView.swift` is the panel; `Face.swift` holds the four 8×8 faces.
+- `Sources/cr`: the command line.
+- `Resources/fonts`: Archivo (SIL Open Font License), packaged into the app by `build-app`.
+- `swift test` runs the rules tests. `"build/Control Room.app/Contents/MacOS/ControlRoom" --snapshot <folder>` renders the panel and faces to PNGs to compare with `reference/`.

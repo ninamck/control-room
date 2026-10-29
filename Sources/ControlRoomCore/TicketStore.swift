@@ -6,6 +6,8 @@ public final class TicketStore: @unchecked Sendable {
     private let lock = NSLock()
     private var tickets: [Ticket] = []
     private let now: () -> Date
+    /// Called after every saved change, from whichever thread made it.
+    public var onChange: (@Sendable () -> Void)?
 
     public init(fileURL: URL = Config.directory.appendingPathComponent("tickets.json"),
                 now: @escaping () -> Date = Date.init) throws {
@@ -54,11 +56,19 @@ public final class TicketStore: @unchecked Sendable {
     /// Every read and write goes through here: rules first, then the change, then save.
     private func locked<T>(_ body: () throws -> T) throws -> T {
         lock.lock()
-        defer { lock.unlock() }
         let before = tickets
-        tickets = Rules.tick(tickets, now: now())
-        let result = try body()
-        if tickets != before { try save() }
+        let result: T
+        do {
+            tickets = Rules.tick(tickets, now: now())
+            result = try body()
+            if tickets != before { try save() }
+        } catch {
+            lock.unlock()
+            throw error
+        }
+        let changed = tickets != before
+        lock.unlock()
+        if changed { onChange?() }
         return result
     }
 

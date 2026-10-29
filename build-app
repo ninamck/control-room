@@ -1,0 +1,42 @@
+#!/bin/sh
+# Builds "Control Room.app" into build/ and opens it.
+set -e
+cd "$(dirname "$0")"
+
+swift build -c release --product ControlRoom
+APP="build/Control Room.app"
+rm -rf "$APP"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp "$(swift build -c release --show-bin-path)/ControlRoom" "$APP/Contents/MacOS/ControlRoom"
+# Archivo, if it has been added to Resources/fonts.
+cp Resources/fonts/*.ttf "$APP/Contents/Resources/" 2>/dev/null || true
+
+cat > "$APP/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Control Room</string>
+  <key>CFBundleDisplayName</key><string>Control Room</string>
+  <key>CFBundleIdentifier</key><string>local.nina.controlroom</string>
+  <key>CFBundleExecutable</key><string>ControlRoom</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>0.2</string>
+  <key>CFBundleVersion</key><string>2</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+PLIST
+
+codesign --force --sign - "$APP" >/dev/null
+echo "Built $APP"
+
+if [ "$1" != "--no-open" ]; then
+  # Quit a running copy first so the new one can take the server port.
+  osascript -e 'quit app "Control Room"' >/dev/null 2>&1 || true
+  pkill -x ControlRoom 2>/dev/null || true
+  sleep 0.5
+  open "$APP"
+fi
