@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scheduled tasks in the board</title>
+</head>
+<body style="margin:0;background:#D9D5CC;padding:40px;display:flex;justify-content:center;">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#444444}
+</style>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background-color: #F6F3EC; background-image: linear-gradient(#E8E3D8 1px, transparent 1px), linear-gradient(90deg, #E8E3D8 1px, transparent 1px); background-size: 40px 40px; color: #111111; font-family: Archivo, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden;">
+
+  <header style="height: 56px; box-sizing: border-box; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #111111; background: #F6F3EC;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="24" height="24" viewBox="0 0 8 8" role="img" aria-label="Companion" shape-rendering="crispEdges" style="display: block;">
+        <rect x="0" y="0" width="8" height="8" fill="#F8C94A"></rect>
+        <rect x="2" y="2" width="1" height="1" fill="#111111"></rect>
+        <rect x="5" y="2" width="1" height="1" fill="#111111"></rect>
+        <rect x="2" y="5" width="4" height="1" fill="#111111"></rect>
+      </svg>
+      <span style="font-size: 13px; font-weight: 900; letter-spacing: 0.12em;">CONTROL ROOM</span>
+    </div>
+    <span style="font-size: 13px; font-weight: 500;">Friday 30 Oct · 08:52</span>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: flex;">
+
+    <aside style="width: 340px; box-sizing: border-box; display: flex; flex-direction: column; border-right: 1px solid #111111;">
+      <section style="flex: 3; box-sizing: border-box; padding: 20px 24px; background: #F8A9C9; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 1px solid #111111;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">WAITING ON YOU</span>
+        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+          <span style="font-size: 160px; font-weight: 900; line-height: 0.85; letter-spacing: -0.04em;">2</span>
+          <span style="font-size: 13px; font-weight: 700; line-height: 1.4; text-align: right;">both landed<br>overnight</span>
+        </div>
+      </section>
+      <section style="flex: 2; box-sizing: border-box; padding: 20px 24px; background: #A9C4F2; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 1px solid #111111;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">WORKING</span>
+        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+          <span style="font-size: 96px; font-weight: 900; line-height: 0.85; letter-spacing: -0.04em;">1</span>
+          <span style="font-size: 13px; font-weight: 700; line-height: 1.4; text-align: right;">PM news<br>since 08:50</span>
+        </div>
+      </section>
+      <section style="flex: 2; box-sizing: border-box; padding: 20px 24px; background: #F6F3EC; display: flex; flex-direction: column; justify-content: space-between;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">NEXT SCHEDULED</span>
+        <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+          <span style="font-size: 96px; font-weight: 900; line-height: 0.85; letter-spacing: -0.04em;">9<span style="font-size: 40px; letter-spacing: 0;">:00</span></span>
+          <span style="font-size: 13px; font-weight: 700; line-height: 1.4; text-align: right;">Morning brief<br>Claude</span>
+        </div>
+      </section>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; overflow: hidden;">
+
+      <section aria-labelledby="landed-h" style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 id="landed-h" style="margin: 0; font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">LANDED WHILE YOU WERE AWAY</h2>
+
+        <article style="box-sizing: border-box; background: #FFFFFF; border: 1px solid #111111; box-shadow: 6px 6px 0 #111111; display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: stretch;">
+          <div style="box-sizing: border-box; background: #F8A9C9; border-right: 1px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px 8px;">
+            <span style="font-size: 22px; font-weight: 900; line-height: 1;">06:00</span>
+            <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.1em;">RAN</span>
+          </div>
+          <div style="box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+            <span style="font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #111111; color: #FFFFFF; font-size: 10px; font-weight: 900;">A</span>Claude · scheduled · daily</span>
+            <h3 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em;">Overnight Sentry triage</h3>
+            <p style="margin: 0; font-size: 13.5px; color: #4A4640; line-height: 1.45;">3 new issues, one touches GRN saving. It wants to know whether to open a Linear ticket.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; border-left: 1px solid #111111;">
+            <a href="#read-1" style="flex: 1; min-width: 112px; display: inline-flex; align-items: center; justify-content: center; background: #111111; color: #FFFFFF; font-size: 13px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none;">READ</a>
+            <button type="button" style="flex: 1; border: none; border-top: 1px solid #111111; background: #BFE3C4; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 0.06em; cursor: pointer;">YES, TICKET IT</button>
+          </div>
+        </article>
+
+        <article style="box-sizing: border-box; background: #FFFFFF; border: 1px solid #111111; box-shadow: 6px 6px 0 #111111; display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: stretch;">
+          <div style="box-sizing: border-box; background: #F8A9C9; border-right: 1px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px 8px;">
+            <span style="font-size: 22px; font-weight: 900; line-height: 1;">07:30</span>
+            <span style="font-size: 10px; font-weight: 900; letter-spacing: 0.1em;">RAN</span>
+          </div>
+          <div style="box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+            <span style="font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #111111; color: #FFFFFF; font-size: 10px; font-weight: 900;">G</span>Grok · scheduled · weekdays · no feed</span>
+            <h3 style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em;">QSR news scan</h3>
+            <p style="margin: 0; font-size: 13.5px; color: #4A4640; line-height: 1.45;">Grok can't tell us it finished, so this appears at the expected time. Mark it read once you've looked.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; border-left: 1px solid #111111;">
+            <a href="#read-2" style="flex: 1; min-width: 112px; display: inline-flex; align-items: center; justify-content: center; background: #111111; color: #FFFFFF; font-size: 13px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none;">OPEN</a>
+            <button type="button" style="flex: 1; border: none; border-top: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;">READ IT</button>
+          </div>
+        </article>
+      </section>
+
+      <section aria-labelledby="sched-h" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <h2 id="sched-h" style="margin: 0; font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">ON A SCHEDULE</h2>
+          <span style="font-size: 12px; color: #4A4640;">Edit schedules in the tool. This only watches.</span>
+        </div>
+        <div style="border: 1px solid #111111; background: #FFFFFF; display: flex; flex-direction: column;">
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 140px 110px 120px; align-items: center; gap: 12px; height: 44px; padding: 0 16px; border-bottom: 1px solid #111111; font-size: 13px;">
+            <span style="font-weight: 900;">09:00</span>
+            <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #111111; color: #FFFFFF; font-size: 9px; font-weight: 900;">A</span>Morning brief</span>
+            <span style="color: #4A4640;">weekdays</span>
+            <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #A9C4F2; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; justify-self: start;">IN 8 MIN</span>
+            <span style="color: #4A4640; text-align: right;">last ok · Thu</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 140px 110px 120px; align-items: center; gap: 12px; height: 44px; padding: 0 16px; border-bottom: 1px solid #111111; font-size: 13px;">
+            <span style="font-weight: 900;">08:50</span>
+            <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #111111; color: #FFFFFF; font-size: 9px; font-weight: 900;">A</span>PM news digest</span>
+            <span style="color: #4A4640;">weekdays</span>
+            <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #A9C4F2; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; justify-self: start;">RUNNING</span>
+            <span style="color: #4A4640; text-align: right;">last ok · Thu</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 140px 110px 120px; align-items: center; gap: 12px; height: 44px; padding: 0 16px; border-bottom: 1px solid #111111; font-size: 13px;">
+            <span style="font-weight: 900;">06:00</span>
+            <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #111111; color: #FFFFFF; font-size: 9px; font-weight: 900;">A</span>Overnight Sentry triage</span>
+            <span style="color: #4A4640;">daily</span>
+            <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #F8A9C9; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; justify-self: start;">NEEDS YOU</span>
+            <span style="color: #4A4640; text-align: right;">ran 06:02</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 140px 110px 120px; align-items: center; gap: 12px; height: 44px; padding: 0 16px; border-bottom: 1px solid #111111; font-size: 13px;">
+            <span style="font-weight: 900;">07:30</span>
+            <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #111111; color: #FFFFFF; font-size: 9px; font-weight: 900;">G</span>QSR news scan</span>
+            <span style="color: #4A4640;">weekdays</span>
+            <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #F8A9C9; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; justify-self: start;">UNREAD</span>
+            <span style="color: #4A4640; text-align: right;">expected 07:30</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 140px 110px 120px; align-items: center; gap: 12px; height: 44px; padding: 0 16px; font-size: 13px;">
+            <span style="font-weight: 900;">Mon 08:00</span>
+            <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; background: #111111; color: #FFFFFF; font-size: 9px; font-weight: 900;">A</span>All-hands numbers pull</span>
+            <span style="color: #4A4640;">fortnightly</span>
+            <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #E8604F; font-size: 11px; font-weight: 900; letter-spacing: 0.06em; justify-self: start;">MISSED</span>
+            <span style="color: #4A4640; text-align: right;">no run Mon 27</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

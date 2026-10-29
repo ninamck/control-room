@@ -1,0 +1,23 @@
+# Secrets and local config. Never commit these.
+config.local.*
+*.local.json
+.env
+.env.*
+!.env.example
+
+# Ticket store and logs
+data/
+*.db
+*.sqlite
+*.log
+
+# Build output and dependencies
+node_modules/
+target/
+build/
+dist/
+DerivedData/
+.build/
+
+# macOS
+.DS_Store

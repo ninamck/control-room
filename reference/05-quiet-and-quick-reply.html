@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notch panel with quiet and quick replies</title>
+</head>
+<body style="margin:0;background:#D9D5CC;padding:40px;display:flex;justify-content:center;">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#444444}
+</style>
+<div style="width: 1440px; height: 620px; box-sizing: border-box; position: relative; background-color: #CFC9EC; background-image: linear-gradient(#BDB6E2 1px, transparent 1px), linear-gradient(90deg, #BDB6E2 1px, transparent 1px); background-size: 40px 40px; color: #111111; font-family: Archivo, system-ui, sans-serif; overflow: hidden;">
+
+  <div style="height: 37px; background: #F6F3EC; border-bottom: 1px solid #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 13px; font-weight: 500;">
+    <div style="display: flex; gap: 18px;"><span style="font-weight: 900;">Cursor</span><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span></div>
+    <div style="display: flex; gap: 14px;"><span>Thu 29 Oct</span><span>14:37</span></div>
+  </div>
+
+  <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 560px; box-sizing: border-box; display: flex; flex-direction: column;">
+
+    <div style="height: 44px; box-sizing: border-box; background: #111111; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
+      <span style="display: flex; align-items: center; gap: 12px;">
+        <svg width="28" height="28" viewBox="0 0 8 8" role="img" aria-label="Companion asleep" shape-rendering="crispEdges" style="display: block;">
+          <rect x="0" y="0" width="8" height="8" fill="#F8C94A"></rect>
+          <rect x="1" y="3" width="2" height="1" fill="#111111"></rect>
+          <rect x="5" y="3" width="2" height="1" fill="#111111"></rect>
+          <rect x="3" y="5" width="2" height="1" fill="#111111"></rect>
+        </svg>
+        <span style="font-size: 13px; font-weight: 900; letter-spacing: 0.1em;">QUIET UNTIL 15:02</span>
+      </span>
+      <span style="display: flex; align-items: stretch; height: 28px; border: 1px solid #FFFFFF;">
+        <button type="button" style="padding: 0 10px; border: none; border-right: 1px solid #FFFFFF; background: transparent; color: #FFFFFF; font-family: Archivo, system-ui, sans-serif; font-size: 11px; font-weight: 700; cursor: pointer;">+25</button>
+        <button type="button" style="padding: 0 10px; border: none; border-right: 1px solid #FFFFFF; background: transparent; color: #FFFFFF; font-family: Archivo, system-ui, sans-serif; font-size: 11px; font-weight: 700; cursor: pointer;">+50</button>
+        <button type="button" style="padding: 0 10px; border: none; background: #F8C94A; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 11px; font-weight: 900; cursor: pointer;">WAKE</button>
+      </span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #111111; border-top: none; box-shadow: 8px 8px 0 #111111; display: flex; flex-direction: column;">
+
+      <div style="display: grid; grid-template-columns: 64px minmax(0, 1fr); border-bottom: 1px solid #111111;">
+        <div style="background: #F8A9C9; border-right: 1px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 6px;">
+          <span style="font-size: 22px; font-weight: 900; line-height: 1;">2</span>
+          <span style="font-size: 9px; font-weight: 900; letter-spacing: 0.1em;">MIN</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="padding: 12px 16px 10px; display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 11px; font-weight: 700;">Devin · transfer-requests · yes or no</span>
+            <span style="font-size: 16px; font-weight: 700; line-height: 1.25;">Merge PR #412? Checks green, 14 files.</span>
+          </div>
+          <div style="display: flex; border-top: 1px solid #111111;">
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #BFE3C4; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; cursor: pointer;">YES, MERGE</button>
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;">NOT YET</button>
+            <a href="#open-devin" style="flex: 0 0 90px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none; color: #111111;">OPEN</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 64px minmax(0, 1fr); border-bottom: 1px solid #111111;">
+        <div style="background: #F8A9C9; border-right: 1px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 6px;">
+          <span style="font-size: 22px; font-weight: 900; line-height: 1;">7</span>
+          <span style="font-size: 9px; font-weight: 900; letter-spacing: 0.1em;">MIN</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="padding: 12px 16px 10px; display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 11px; font-weight: 700;">Claude Code · edify-web · pick one</span>
+            <span style="font-size: 16px; font-weight: 700; line-height: 1.25;">Keep POS matching under Menu, or move it to Integrations?</span>
+          </div>
+          <div style="display: flex; border-top: 1px solid #111111;">
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;">1 · MENU</button>
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;">2 · INTEGRATIONS</button>
+            <a href="#open-claude" style="flex: 0 0 90px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none; color: #111111;">OPEN</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 64px minmax(0, 1fr); border-bottom: 1px solid #111111;">
+        <div style="background: #E8604F; border-right: 1px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 6px;">
+          <span style="font-size: 22px; font-weight: 900; line-height: 1;">31</span>
+          <span style="font-size: 9px; font-weight: 900; letter-spacing: 0.1em;">MIN</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="padding: 12px 16px 10px; display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 11px; font-weight: 700;">Grok · added by you · no feed</span>
+            <span style="font-size: 16px; font-weight: 700; line-height: 1.25;">Competitor pricing research</span>
+          </div>
+          <div style="display: flex; border-top: 1px solid #111111;">
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #BFE3C4; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; cursor: pointer;">✓ DONE</button>
+            <button type="button" style="flex: 1; height: 40px; border: none; border-right: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;">STILL RUNNING</button>
+            <a href="#open-grok" style="flex: 0 0 90px; height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none; color: #111111;">OPEN</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: stretch;">
+        <span style="flex: 1; display: inline-flex; align-items: center; padding: 0 16px; height: 44px; font-size: 12px; font-weight: 700;"><span style="font-weight: 900; margin-right: 6px;">5</span> working · <span style="font-weight: 900; margin: 0 6px;">4</span> done · next hard stop 23 min</span>
+        <a href="#handoff" style="display: inline-flex; align-items: center; padding: 0 16px; border-left: 1px solid #111111; background: #F8C94A; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-decoration: none; color: #111111; white-space: nowrap;">+ HAND OFF</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 32px; bottom: 28px; max-width: 380px; box-sizing: border-box; padding: 14px 16px; background: #F6F3EC; border: 1px solid #111111; box-shadow: 4px 4px 0 #111111; font-size: 12.5px; line-height: 1.5;">
+    <span style="font-weight: 900; letter-spacing: 0.1em; font-size: 11px; display: block; margin-bottom: 6px;">QUIET</span>
+    While quiet, the face sleeps even if tickets are waiting. No animation, no colour change. On wake it shows the count. Quiet ends on its own at the time shown, or early when you press Wake.
+  </div>
+
+  <div style="position: absolute; right: 32px; bottom: 28px; max-width: 380px; box-sizing: border-box; padding: 14px 16px; background: #F6F3EC; border: 1px solid #111111; box-shadow: 4px 4px 0 #111111; font-size: 12.5px; line-height: 1.5;">
+    <span style="font-weight: 900; letter-spacing: 0.1em; font-size: 11px; display: block; margin-bottom: 6px;">QUICK REPLIES</span>
+    Only shown when the agent's last message was a yes or no, or a numbered choice, and only for tools that accept a message (Devin, Claude Code). Anything else gets Open. Manual tickets get Done and Still running instead.
+  </div>
+
+</div>
+</body>
+</html>

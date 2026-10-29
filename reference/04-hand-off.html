@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hand off a task to an agent</title>
+</head>
+<body style="margin:0;background:#D9D5CC;padding:40px;display:flex;justify-content:center;">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#444444}
+</style>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background-color: #F6F3EC; background-image: linear-gradient(#E8E3D8 1px, transparent 1px), linear-gradient(90deg, #E8E3D8 1px, transparent 1px); background-size: 40px 40px; color: #111111; font-family: Archivo, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden;">
+
+  <header style="height: 56px; box-sizing: border-box; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #111111; background: #F6F3EC;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="24" height="24" viewBox="0 0 8 8" role="img" aria-label="Companion" shape-rendering="crispEdges" style="display: block;">
+        <rect x="0" y="0" width="8" height="8" fill="#F8C94A"></rect>
+        <rect x="2" y="2" width="1" height="1" fill="#111111"></rect>
+        <rect x="5" y="2" width="1" height="1" fill="#111111"></rect>
+        <rect x="2" y="5" width="4" height="1" fill="#111111"></rect>
+      </svg>
+      <span style="font-size: 13px; font-weight: 900; letter-spacing: 0.12em;">CONTROL ROOM</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 500;">
+      <span style="display: inline-flex; align-items: center; height: 36px; padding: 0 14px; background: #111111; color: #FFFFFF; font-weight: 900; letter-spacing: 0.08em; font-size: 12px;">NEXT HARD STOP · 23 MIN · Pret weekly</span>
+      <span>14:37</span>
+    </div>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 400px;">
+
+    <main style="box-sizing: border-box; padding: 32px 40px; display: flex; flex-direction: column; gap: 24px; border-right: 1px solid #111111;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">HAND OFF</span>
+        <h1 style="margin: 0; font-size: 40px; font-weight: 900; letter-spacing: -0.03em; line-height: 1;">What should it do?</h1>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="brief" style="font-size: 12px; font-weight: 700;">Brief</label>
+        <textarea id="brief" rows="5" style="box-sizing: border-box; width: 100%; padding: 14px 16px; border: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 15px; line-height: 1.5; resize: none; box-shadow: 6px 6px 0 #111111;">Draft the corrective actions table for the Checklists PRD: one row per failed check type, who gets alerted, what the GM has to do, and when it escalates. Use the audits section as the source.</textarea>
+        <span style="font-size: 12px; color: #4A4640;">Shift+Enter for a new line. Enter sends.</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+        <fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 6px;">
+          <legend style="font-size: 12px; font-weight: 700; padding: 0; margin-bottom: 6px;">Tool</legend>
+          <div style="display: flex; border: 1px solid #111111; background: #FFFFFF;">
+            <label style="flex: 1; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #111111; color: #FFFFFF; cursor: pointer; border-right: 1px solid #111111;"><input type="radio" name="tool" checked style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"><span style="font-size: 16px; font-weight: 900;">A</span><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">CLAUDE</span></label>
+            <label style="flex: 1; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; border-right: 1px solid #111111;"><input type="radio" name="tool" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"><span style="font-size: 16px; font-weight: 900;">C</span><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">CURSOR</span></label>
+            <label style="flex: 1; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; border-right: 1px solid #111111;"><input type="radio" name="tool" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"><span style="font-size: 16px; font-weight: 900;">D</span><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">DEVIN</span></label>
+            <label style="flex: 1; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;"><input type="radio" name="tool" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"><span style="font-size: 16px; font-weight: 900;">G</span><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">GROK</span></label>
+          </div>
+          <span style="font-size: 12px; color: #4A4640;">Claude and Devin start on their own. Cursor and Grok open with the brief copied.</span>
+        </fieldset>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="where" style="font-size: 12px; font-weight: 700;">Where</label>
+          <select id="where" style="height: 56px; box-sizing: border-box; padding: 0 14px; border: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 14px; font-weight: 500;">
+            <option>Checklists PRD · Claude project</option>
+            <option>edify-web · repo</option>
+            <option>Quick Count PRD · Claude project</option>
+            <option>New chat</option>
+          </select>
+          <span style="font-size: 12px; color: #4A4640;">Last used first.</span>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 13px; color: #4A4640;">Becomes a Working ticket. You'll hear from it only when it needs you.</span>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" style="height: 44px; padding: 0 18px; border: 1px solid #111111; background: #FFFFFF; color: #111111; font-family: Archivo, system-ui, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; box-shadow: 3px 3px 0 #111111; cursor: pointer;">CANCEL</button>
+          <button type="button" style="height: 44px; padding: 0 24px; border: 1px solid #111111; background: #111111; color: #FFFFFF; font-family: Archivo, system-ui, sans-serif; font-size: 13px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 3px 3px 0 #111111; cursor: pointer;">GO →</button>
+        </div>
+      </div>
+    </main>
+
+    <aside style="box-sizing: border-box; display: flex; flex-direction: column; background: #FFFFFF;">
+      <div style="box-sizing: border-box; padding: 20px 24px; background: #CFC9EC; border-bottom: 1px solid #111111; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.12em;">READY TO DELEGATE</span>
+        <span style="font-size: 12.5px; color: #111111;">From Notion, tagged "agent". Click one to fill the brief.</span>
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;">
+        <li><a href="#d1" style="display: flex; flex-direction: column; gap: 3px; padding: 14px 24px; border-bottom: 1px solid #111111; text-decoration: none; color: #111111; background: #F6F3EC;"><span style="font-size: 15px; font-weight: 700;">Corrective actions table for Checklists PRD</span><span style="font-size: 12px; color: #4A4640;">Due Fri · Q4 roadmap</span></a></li>
+        <li><a href="#d2" style="display: flex; flex-direction: column; gap: 3px; padding: 14px 24px; border-bottom: 1px solid #111111; text-decoration: none; color: #111111;"><span style="font-size: 15px; font-weight: 700;">Eval cases for Talkshop waste questions</span><span style="font-size: 12px; color: #4A4640;">No date · AI pillar</span></a></li>
+        <li><a href="#d3" style="display: flex; flex-direction: column; gap: 3px; padding: 14px 24px; border-bottom: 1px solid #111111; text-decoration: none; color: #111111;"><span style="font-size: 15px; font-weight: 700;">Rewrite transfer request empty states</span><span style="font-size: 12px; color: #4A4640;">Next week · core</span></a></li>
+        <li><a href="#d4" style="display: flex; flex-direction: column; gap: 3px; padding: 14px 24px; border-bottom: 1px solid #111111; text-decoration: none; color: #111111;"><span style="font-size: 15px; font-weight: 700;">Summarise last three Pret calls for Alistair</span><span style="font-size: 12px; color: #4A4640;">Tomorrow · Pret</span></a></li>
+        <li><a href="#d5" style="display: flex; flex-direction: column; gap: 3px; padding: 14px 24px; border-bottom: 1px solid #111111; text-decoration: none; color: #111111;"><span style="font-size: 15px; font-weight: 700;">Bike app: battery screen copy</span><span style="font-size: 12px; color: #4A4640;">Whenever · personal</span></a></li>
+      </ul>
+      <div style="margin-top: auto; box-sizing: border-box; padding: 16px 24px; border-top: 1px solid #111111; display: flex; justify-content: space-between; font-size: 12px; font-weight: 700;">
+        <span>5 of 5 shown</span>
+        <a href="#notion" style="text-decoration: underline; text-underline-offset: 3px;">Open in Notion</a>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>
