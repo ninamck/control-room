@@ -48,7 +48,7 @@ The app runs the local server, so `./cr` works whenever the app is open:
 
 ## Calendar
 
-The board and Hand off show NEXT HARD STOP · 23 MIN · Pret weekly: the next busy event today from the Mac's Calendar. The panel shows it too when it's within the hour. macOS asks once for calendar access. Google calendars appear if the account is added in System Settings → Internet Accounts.
+The board and Hand off show NEXT HARD STOP · 23 MIN · Pret weekly: the next busy event today from your Google calendar (the meetings Notion Calendar shows). The panel shows it too when it's within the hour. To connect it, copy the "Secret address in iCal format" from Google Calendar's settings for your calendar, then run `./cr set-calendar-link` and paste it.
 
 ## Scheduled tasks
 

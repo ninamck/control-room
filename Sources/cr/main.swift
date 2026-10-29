@@ -22,6 +22,7 @@ Control Room
   cr remove-claude-hooks           stop sending them
   cr set-notion-token              connect the Ready to delegate list to Notion
   cr set-devin-token               connect your Devin sessions
+  cr set-calendar-link             connect your calendar for the next hard stop
 
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
@@ -227,6 +228,31 @@ case "set-devin-token":
         print("Connected to Devin as \(me.userName). Your Devin sessions will show up within 30 seconds.")
     case .failure(let error)?: fail(error.localizedDescription)
     case nil: fail("Couldn't check the token with Devin.")
+    }
+case "set-calendar-link":
+    // The link is private (anyone with it can read the calendar), so read it without echo.
+    guard let raw = getpass("Paste your calendar's secret iCal address (it won't show as you paste), then press Return: ") else { fail("Nothing pasted.") }
+    var link = String(cString: raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    let half = link.count / 2
+    if link.count % 2 == 0, link.prefix(half) == link.suffix(half) { link = String(link.prefix(half)) }
+    var fetched: Result<String, Error>?
+    let got = DispatchSemaphore(value: 0)
+    Task {
+        do { fetched = .success(try await ICSCalendar.fetch(link)) } catch { fetched = .failure(error) }
+        got.signal()
+    }
+    got.wait()
+    switch fetched {
+    case .success(let text)?:
+        var updated = config
+        updated.calendarLink = link
+        do { try updated.save() } catch { fail("Couldn't save it: \(error.localizedDescription)") }
+        let today = ICSCalendar.events(on: Date(), in: text)
+        let next = HardStop.next(in: today, now: Date())
+        print("Connected. \(today.count) event\(today.count == 1 ? "" : "s") today. " +
+              (next.map { "Next hard stop: \($0.title) in \($0.until(Date()).lowercased())." } ?? "No more hard stops today."))
+    case .failure(let error)?: fail(error.localizedDescription)
+    case nil: fail("Couldn't check the link.")
     }
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)

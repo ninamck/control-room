@@ -11,6 +11,8 @@ public struct Config: Codable, Sendable {
     public var notionToken: String?
     /// Which Notion data source to read. Defaults to Task Tracker.
     public var notionDataSource: String?
+    /// The calendar's private iCal link, for the next hard stop. Set with `cr set-calendar-link`.
+    public var calendarLink: String?
     /// When End of day opens by itself, "HH:mm". Nina chose 18:30.
     public var endOfDay: String?
     /// Devin personal access token, and who it belongs to. Set with `cr set-devin-token`.
