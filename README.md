@@ -27,7 +27,7 @@ That builds `build/Control Room.app` and opens it. After that you can open it fr
 - The face sits in the notch on the MacBook screen. Hover over it or click it to open the panel.
 - Control-Option-C opens and closes the panel from anywhere. Escape closes it.
 - When the lid is closed, or you're working on another screen, the face also appears in the menu bar. Click it there.
-- Quick-add: type "Grok · pricing research" and press Return. Paste a link and it becomes the ticket's Open link. If you don't name a tool, pick one from the squares that appear.
+- Quick-add: type "Grok · pricing research" and press Return. Paste a link and it becomes the ticket's Open link. For Cursor, paste the project folder instead (drag the folder from Finder into the field): Open then brings that project's Cursor window to the front. Cursor tickets never open cursor.com. If you don't name a tool, pick one from the squares that appear.
 
 The app runs the local server, so `./cr` works whenever the app is open:
 

@@ -10,9 +10,9 @@ public struct QuickAdd: Equatable, Sendable {
     public static func parse(_ text: String) -> QuickAdd {
         var words = text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
 
-        // A pasted link becomes the deep link.
+        // A pasted link or project folder becomes the deep link.
         var link: String?
-        if let i = words.firstIndex(where: { $0.hasPrefix("http://") || $0.hasPrefix("https://") }) {
+        if let i = words.firstIndex(where: { $0.hasPrefix("http://") || $0.hasPrefix("https://") || Self.localFolder($0) != nil }) {
             link = words.remove(at: i)
         }
         var rest = words.joined(separator: " ")
@@ -44,6 +44,21 @@ public struct QuickAdd: Equatable, Sendable {
         (["grok"], .grok),
         (["devin"], .devin),
     ]
+
+    /// A link that points at a folder on this Mac: "/Users/nina/code/edify-web", "~/code/edify-web" or a file:// URL.
+    public static func localFolder(_ link: String) -> URL? {
+        if link.hasPrefix("file://") { return URL(string: link) }
+        if link.hasPrefix("~/") { return URL(fileURLWithPath: (link as NSString).expandingTildeInPath, isDirectory: true) }
+        if link.hasPrefix("/") && link.count > 1 { return URL(fileURLWithPath: link, isDirectory: true) }
+        return nil
+    }
+
+    /// The thread name to show when only a folder was given: its last part, like "edify-web".
+    public static func threadName(forLink link: String) -> String? {
+        guard let folder = localFolder(link) else { return nil }
+        let name = folder.lastPathComponent
+        return name.isEmpty || name == "/" ? nil : name
+    }
 
     static func tool(forLink link: String) -> Tool? {
         guard let host = URL(string: link)?.host?.lowercased() else { return nil }

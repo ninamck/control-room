@@ -58,8 +58,9 @@ public struct API: Sendable {
             case ("POST", 1) where parts[0] == "tickets":
                 let new = try JSONDecoder.controlRoom.decode(NewTicket.self, from: request.body)
                 guard !new.title.trimmingCharacters(in: .whitespaces).isEmpty else { return error(400, "A ticket needs a title.") }
+                let thread = new.thread ?? new.deepLink.flatMap(QuickAdd.threadName(forLink:)) ?? ""
                 let ticket = Ticket(tool: new.tool, source: new.source ?? .manual, kind: new.kind ?? .interactive,
-                                    title: new.title, thread: new.thread ?? "", lastMessage: new.lastMessage ?? "",
+                                    title: new.title, thread: thread, lastMessage: new.lastMessage ?? "",
                                     questionType: new.questionType ?? .none, deepLink: new.deepLink ?? "",
                                     state: new.state ?? .needsYou)
                 return json(201, try store.add(ticket))

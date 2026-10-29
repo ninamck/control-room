@@ -12,6 +12,8 @@ final class Companion: NSObject, NSWindowDelegate {
     private var menuPanel: (window: CompanionPanel, host: HoverHostingView)?
     /// Opened by a click or the shortcut, so it stays open until dismissed. Hover-opened panels close when the pointer leaves.
     private var pinned = false
+    /// Whether the notch window is showing the panel rather than just the face.
+    private var notchExpanded = false
     private var pendingCollapse: DispatchWorkItem?
     private var watchers: Set<AnyCancellable> = []
     private var hotKey: HotKey?
@@ -46,7 +48,7 @@ final class Companion: NSObject, NSWindowDelegate {
         notch = nil
         if let screen = notchScreen {
             let size = NotchSize(screen: screen)
-            let host = HoverHostingView(rootView: AnyView(NotchView(model: model, size: size, openFromClick: { [weak self] in self?.open(pinned: true) })))
+            let host = HoverHostingView(rootView: notchContent(size, expanded: false))
             let window = CompanionPanel(content: host)
             window.delegate = self
             host.onEnter = { [weak self] in self?.pointerEntered() }
@@ -56,6 +58,17 @@ final class Companion: NSObject, NSWindowDelegate {
             window.orderFrontRegardless()
         }
         updateStatusItem()
+    }
+
+    private func notchContent(_ size: NotchSize, expanded: Bool) -> AnyView {
+        AnyView(NotchView(model: model, size: size, expanded: expanded, openFromClick: { [weak self] in self?.open(pinned: true) }))
+    }
+
+    /// Swaps the notch between face and panel and resizes in the same pass, so it never shows a half-way frame.
+    private func setNotchExpanded(_ expanded: Bool) {
+        guard let notch, expanded != notchExpanded else { return }
+        notchExpanded = expanded
+        notch.host.rootView = notchContent(notch.size, expanded: expanded)
     }
 
     /// Menu bar face when there's no notch, or when the notch isn't on the screen Nina is using.
@@ -99,7 +112,8 @@ final class Companion: NSObject, NSWindowDelegate {
     private func open(pinned: Bool) {
         self.pinned = self.pinned || pinned
         if !model.panelOpen { model.panelOpen = true }
-        layout()
+        if menuPanel == nil { setNotchExpanded(true) }
+        resize()
         if pinned { (menuPanel?.window ?? notch?.window)?.makeKey() }
     }
 
@@ -107,11 +121,12 @@ final class Companion: NSObject, NSWindowDelegate {
         pendingCollapse?.cancel()
         pinned = false
         if model.panelOpen { model.panelOpen = false }
+        setNotchExpanded(false)
         if let panel = menuPanel {
             panel.window.orderOut(nil)
             menuPanel = nil
         }
-        layout()
+        resize()
         updateStatusItem()
     }
 
@@ -147,9 +162,8 @@ final class Companion: NSObject, NSWindowDelegate {
 
     // MARK: Sizing
 
+    /// After tickets change: SwiftUI redraws on its next pass, so resize then.
     private func layout() {
-        resize()
-        // SwiftUI redraws on the next pass, so measure again once it has.
         DispatchQueue.main.async { [weak self] in self?.resize() }
     }
 
@@ -157,12 +171,13 @@ final class Companion: NSObject, NSWindowDelegate {
         if let notch {
             let frame = notch.screen.frame
             let size: NSSize
-            if model.panelOpen && menuPanel == nil {
+            if notchExpanded {
                 size = notch.host.fittingSize
             } else {
                 size = NSSize(width: notch.size.collapsedWidth, height: notch.size.height)
             }
-            notch.window.setFrame(NSRect(x: frame.midX - (size.width - (model.panelOpen && menuPanel == nil ? 8 : 0)) / 2,
+            // The panel is centred under the notch; its 8pt shadow hangs off the right.
+            notch.window.setFrame(NSRect(x: frame.midX - (size.width - (notchExpanded ? 8 : 0)) / 2,
                                          y: frame.maxY - size.height,
                                          width: size.width, height: size.height), display: true)
         }
@@ -201,10 +216,11 @@ struct NotchSize {
 struct NotchView: View {
     @ObservedObject var model: AppModel
     let size: NotchSize
+    let expanded: Bool
     let openFromClick: () -> Void
 
     var body: some View {
-        if model.panelOpen {
+        if expanded {
             VStack(spacing: 0) {
                 // Sits behind the hardware notch, so the panel's header starts just below it.
                 Theme.ink.frame(width: PanelView.width, height: size.height)

@@ -81,22 +81,38 @@ final class AppModel: ObservableObject {
     func quickAdd(_ text: String, tool chosen: Tool?) -> Bool {
         let parsed = QuickAdd.parse(text)
         guard let tool = chosen ?? parsed.tool, !parsed.title.isEmpty else { return false }
-        _ = try? store.add(Ticket(tool: tool, source: .manual, title: parsed.title, deepLink: parsed.link ?? ""))
+        let thread = parsed.link.flatMap(QuickAdd.threadName(forLink:)) ?? ""
+        _ = try? store.add(Ticket(tool: tool, source: .manual, title: parsed.title, thread: thread, deepLink: parsed.link ?? ""))
         reload()
         return true
     }
 
     func open(_ ticket: Ticket) {
+        // Cursor always opens the app on this Mac, never cursor.com, and goes to the project's window when it knows the folder.
+        if ticket.tool == .cursor {
+            openInCursor(folder: QuickAdd.localFolder(ticket.deepLink))
+            return
+        }
         if let url = URL(string: ticket.deepLink), url.scheme != nil {
             NSWorkspace.shared.open(url)
             return
         }
         // No link: open the tool itself.
         switch ticket.tool {
-        case .cursor: openApp("com.todesktop.230313mzl4w4u92", fallback: "https://cursor.com")
+        case .cursor: openInCursor(folder: nil)
         case .claudeAI, .claudeCode: openApp("com.anthropic.claudefordesktop", fallback: "https://claude.ai")
         case .grok: NSWorkspace.shared.open(URL(string: "https://grok.com")!)
         case .devin: NSWorkspace.shared.open(URL(string: "https://app.devin.ai")!)
+        }
+    }
+
+    /// Opening a folder that's already open in Cursor brings that window to the front.
+    private func openInCursor(folder: URL?) {
+        guard let cursor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.todesktop.230313mzl4w4u92") else { return }
+        if let folder, FileManager.default.fileExists(atPath: folder.path) {
+            NSWorkspace.shared.open([folder], withApplicationAt: cursor, configuration: NSWorkspace.OpenConfiguration())
+        } else {
+            NSWorkspace.shared.openApplication(at: cursor, configuration: .init())
         }
     }
 
