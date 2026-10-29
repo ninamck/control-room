@@ -20,3 +20,4 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Hand off remembers a default tool per project**: choosing a project switches to the tool last handed off there.
 - **Devin** is checked every 30 seconds with a personal access token (`cr set-devin-token`), only Nina's own sessions from the last day. Working → Working; waiting for her or her approval → Waiting on you; finished → Waiting on you until she marks it Done; errors and credit or limit stops → Blocked. A ticket only moves when Devin's status changes, so Done sticks.
 - **Quick reply labels**: YES (mint) and NOT YET for yes/no; numbered options for pick one. A failed send turns the ticket Blocked with the reason.
+- **Sleeping Devin sessions stay hidden.** When Devin suspends a session for inactivity, its ticket doesn't change and a new one isn't made. Only live sessions (working, waiting, finished, errored) show.
