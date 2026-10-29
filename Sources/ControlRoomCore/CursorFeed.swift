@@ -40,18 +40,25 @@ public enum CursorFeed {
                 return newTicket(title: transcript?.lastQuestion().flatMap(title(from:)) ?? fallbackTitle)
             }
             let known = tickets.contains { $0.externalId == key }
+            func doing(_ i: Int, _ what: String?) {
+                tickets[i].activity = what
+                tickets[i].activityAt = what == nil ? nil : now
+            }
 
             switch event {
             case "beforeSubmitPrompt":
                 let prompt = payload["prompt"] as? String ?? ""
                 guard known else {
                     let asked = title(from: prompt) ?? transcript?.lastQuestion().flatMap(title(from:)) ?? fallbackTitle
-                    return tickets[newTicket(title: asked)]
+                    let i = newTicket(title: asked)
+                    doing(i, "Reading your message")
+                    return tickets[i]
                 }
                 let i = ticketIndex()
                 // A message that's only a pasted page element keeps the title it had.
                 if let asked = title(from: prompt) { tickets[i].title = asked }
                 tickets[i].questionType = .none
+                doing(i, "Reading your message")
                 try tickets[i].apply(.stillRunning, now: now)
                 return tickets[i]
 
@@ -59,18 +66,22 @@ public enum CursorFeed {
                 guard let text = payload["text"] as? String, !text.isEmpty else { return nil }
                 let i = ticketIndex()
                 tickets[i].lastMessage = text
+                doing(i, "Finishing its reply")
                 return tickets[i]
 
             case "preToolUse":
                 let i = ticketIndex()
+                let input = payload["tool_input"] as? [String: Any] ?? [:]
                 guard isQuestion(payload["tool_name"]) else {
+                    doing(i, activity(tool: payload["tool_name"] as? String ?? "", input: input))
                     // Using any other tool means it's busy, whatever it was before.
-                    guard tickets[i].state != .working else { return known ? nil : tickets[i] }
-                    tickets[i].questionType = .none
-                    try tickets[i].apply(.stillRunning, now: now)
+                    if tickets[i].state != .working {
+                        tickets[i].questionType = .none
+                        try tickets[i].apply(.stillRunning, now: now)
+                    }
                     return tickets[i]
                 }
-                let input = payload["tool_input"] as? [String: Any] ?? [:]
+                doing(i, nil)
                 if let question = questionText(input) { tickets[i].lastMessage = question }
                 let options = optionLabels(input)
                 tickets[i].questionType = options.isEmpty ? .free : .choice(options)
@@ -79,13 +90,18 @@ public enum CursorFeed {
 
             case "postToolUse":
                 let i = ticketIndex()
-                guard isQuestion(payload["tool_name"]), tickets[i].state == .needsYou else { return known ? nil : tickets[i] }
+                // Between tools the agent is working out what to do next.
+                doing(i, "Thinking")
+                guard isQuestion(payload["tool_name"]), tickets[i].state == .needsYou else { return tickets[i] }
                 tickets[i].questionType = .none
                 try tickets[i].apply(.stillRunning, now: now)
                 return tickets[i]
 
             case "stop":
                 let i = ticketIndex()
+                doing(i, nil)
+                // The transcript is complete by now, so it's the surest source of what she last asked.
+                if let asked = transcript?.lastQuestion().flatMap(title(from:)) { tickets[i].title = asked }
                 if tickets[i].lastMessage.isEmpty, let reply = transcript?.lastReply() { tickets[i].lastMessage = reply }
                 switch payload["status"] as? String {
                 case "error":
@@ -102,6 +118,7 @@ public enum CursorFeed {
 
             case "sessionEnd":
                 guard known, let i = tickets.firstIndex(where: { $0.externalId == key }), tickets[i].state == .working else { return nil }
+                doing(i, nil)
                 try tickets[i].apply(.done, now: now)
                 return tickets[i]
 
@@ -121,10 +138,25 @@ public enum CursorFeed {
     static func title(from prompt: String) -> String? {
         let line = prompt.split(whereSeparator: \.isNewline)
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .first { !$0.isEmpty && !pastedElementPrefixes.contains(where: $0.hasPrefix) }
+            .lazy
+            .compactMap { line -> String? in
+                if line.isEmpty { return nil }
+                // Her words follow the pasted element on the same line: "...</div> will this default to open?"
+                if line.hasPrefix("HTML Element:") { return wordsAfterElement(line) }
+                return pastedElementPrefixes.contains(where: line.hasPrefix) ? nil : line
+            }
+            .first
         guard let line else { return nil }
         if let readable = readableLink(line) { return readable }
         return line.count > 80 ? String(line.prefix(79)) + "…" : line
+    }
+
+    /// Text after the last closing tag of a pasted element, if any.
+    static func wordsAfterElement(_ line: String) -> String? {
+        guard let close = line.range(of: "</", options: .backwards),
+              let end = line.range(of: ">", range: close.upperBound..<line.endIndex) else { return nil }
+        let words = line[end.upperBound...].trimmingCharacters(in: .whitespaces)
+        return words.isEmpty ? nil : words
     }
 
     /// "https://linear.app/x/project/predictive-ordering-ai-rules-and-ui-sweep-8c6" → "Predictive ordering ai rules and ui sweep".
@@ -136,6 +168,46 @@ public enum CursorFeed {
         let phrase = words.joined(separator: " ")
         guard !phrase.isEmpty else { return url.host }
         return phrase.prefix(1).uppercased() + phrase.dropFirst()
+    }
+
+    /// What a tool call looks like to Nina: "Running npm test", "Editing basket.tsx", "Searching the code".
+    static func activity(tool: String, input: [String: Any]) -> String {
+        let file = (input["file_path"] as? String ?? input["target_file"] as? String ?? input["path"] as? String)
+            .map { URL(fileURLWithPath: $0).lastPathComponent }
+        let name = tool.lowercased()
+        switch name {
+        case "shell", "terminal", "run_terminal_cmd":
+            return command(input["command"] as? String).map { "Running \($0)" } ?? "Running a command"
+        case "read", "read_file":
+            return file.map { "Reading \($0)" } ?? "Reading files"
+        case "write", "edit", "multiedit", "strreplace", "str_replace", "search_replace", "applypatch", "apply_patch", "edit_file":
+            return file.map { "Editing \($0)" } ?? "Editing files"
+        case "delete", "delete_file":
+            return file.map { "Deleting \($0)" } ?? "Deleting a file"
+        case "grep", "glob", "search", "codebase_search", "semanticsearch", "list_dir", "ls":
+            return "Searching the code"
+        case "websearch", "web_search", "webfetch", "fetch":
+            return "Looking something up online"
+        case "task":
+            return "Handing part of it to a helper"
+        case "todowrite", "todo_write":
+            return "Updating its plan"
+        case "readlints", "read_lints":
+            return "Checking for errors"
+        default:
+            if name.hasPrefix("mcp") { return "Using \(tool.split(separator: ":").last.map(String.init) ?? tool)" }
+            return "Using \(tool)"
+        }
+    }
+
+    /// The interesting part of a shell command: skips a leading `cd ... &&`, cut to fit.
+    static func command(_ raw: String?) -> String? {
+        guard var text = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        while text.hasPrefix("cd "), let and = text.range(of: "&&") {
+            text = text[and.upperBound...].trimmingCharacters(in: .whitespaces)
+        }
+        let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
+        return firstLine.count > 40 ? String(firstLine.prefix(39)) + "…" : firstLine
     }
 
     /// Cursor's tool for the multiple-choice Questions prompt. Its exact name isn't documented,

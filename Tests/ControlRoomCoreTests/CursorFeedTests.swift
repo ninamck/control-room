@@ -57,12 +57,26 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(answered?.state == .working)
 }
 
-@Test func otherToolsDontChangeAnything() throws {
+@Test func otherToolsShowWhatItsDoingButStayWorking() throws {
     let store = try makeStore()
     try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "x"]), store: store)
-    #expect(try CursorFeed.handle(event("preToolUse", ["tool_name": "Task"]), store: store) == nil)
-    #expect(try CursorFeed.handle(event("preToolUse", ["tool_name": "Shell"]), store: store) == nil)
-    #expect(try store.all()[0].state == .working)
+    #expect(try store.all()[0].activity == "Reading your message")
+
+    let helper = try CursorFeed.handle(event("preToolUse", ["tool_name": "Task"]), store: store)
+    #expect(helper?.state == .working)
+    #expect(helper?.activity == "Handing part of it to a helper")
+
+    let shell = try CursorFeed.handle(event("preToolUse", ["tool_name": "Shell", "tool_input": [
+        "command": "cd \"/Users/nina/Documents/New AI direction\" && npm run test:e2e -- basket"]]), store: store)
+    #expect(shell?.activity == "Running npm run test:e2e -- basket")
+    #expect(shell?.activityAt == noon)
+
+    let edit = try CursorFeed.handle(event("preToolUse", ["tool_name": "Write", "tool_input": ["file_path": "/x/web/src/basket.tsx"]]), store: store)
+    #expect(edit?.activity == "Editing basket.tsx")
+
+    #expect(try CursorFeed.handle(event("postToolUse", ["tool_name": "Write"]), store: store)?.activity == "Thinking")
+    let done = try CursorFeed.handle(event("stop", ["status": "completed"]), store: store)
+    #expect(done?.activity == nil)
 }
 
 @Test func errorsBlockAndFollowUpsResume() throws {
@@ -116,6 +130,20 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     let t = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": pasted]), store: store)
     #expect(t?.title == "When I click check out it scrolls")
     #expect(CursorFeed.title(from: pasted + "\nmake this box smaller") == "make this box smaller")
+
+    // Cursor puts her words straight after the element, on the same line.
+    let inline = "DOM Path: div#root\nPosition: top=124px\nHTML Element: <div class=\"x\" data-cursor-element-id=\"cursor-el-45\">Predictive orders Empty basket</div> will this default to open the predictive orders always?"
+    #expect(CursorFeed.title(from: inline) == "will this default to open the predictive orders always?")
+}
+
+@Test func finishingRefreshesTheTitleFromTheTranscript() throws {
+    let transcript = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jsonl")
+    try #"{"role":"user","message":{"content":[{"type":"text","text":"<user_query>Newest question</user_query>"}]}}"#
+        .write(to: transcript, atomically: true, encoding: .utf8)
+    let store = try makeStore()
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Old question"]), store: store)
+    let t = try CursorFeed.handle(event("stop", ["status": "completed", "transcript_path": transcript.path]), store: store)
+    #expect(t?.title == "Newest question")
 }
 
 @Test func toolUseAfterFinishingMeansWorkingAgain() throws {

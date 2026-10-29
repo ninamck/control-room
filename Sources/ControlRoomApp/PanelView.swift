@@ -262,17 +262,35 @@ struct WorkingRow: View {
                     .font(Theme.font(13.5, .bold))
                     .lineLimit(1)
                     .truncationMode(.tail)
+                if let activity = ticket.activity, let at = ticket.activityAt {
+                    Text("\(activity) · \(Self.ago(at, model.now))")
+                        .font(Theme.font(11.5, .regular))
+                        .foregroundStyle(Theme.bodyGrey)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .accessibilityLabel("Now: \(activity), \(Self.ago(at, model.now))")
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
+            .padding(.vertical, 8)
             CellButton(title: "OPEN", strong: true, divider: false) { model.open(ticket) }
                 .frame(width: 90)
                 .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
         }
-        .frame(height: 46)
+        .fixedSize(horizontal: false, vertical: true)
         .bottomRule()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(ticket.tool.displayName): \(ticket.title)")
+    }
+
+    /// "just now", "12s ago", "4 min ago".
+    static func ago(_ date: Date, _ now: Date) -> String {
+        let seconds = max(0, Int(now.timeIntervalSince(date)))
+        if seconds < 5 { return "just now" }
+        if seconds < 60 { return "\(seconds)s ago" }
+        let minutes = seconds / 60
+        return minutes < 60 ? "\(minutes) min ago" : "\(minutes / 60)h ago"
     }
 }
 

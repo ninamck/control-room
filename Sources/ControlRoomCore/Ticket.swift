@@ -113,6 +113,10 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     /// For automatic tickets: the feed's own id, like "cursor:<conversation id>", so later events find the same ticket.
     /// Spelled "Id", not "ID": tickets.json uses snake_case, and "external_id" only reads back into "externalId".
     public var externalId: String?
+    /// For automatic tickets while working: what the agent is doing right now, like "Running npm test".
+    public var activity: String?
+    /// When that activity was last reported.
+    public var activityAt: Date?
 
     /// While in later: when it comes back.
     public var laterUntil: Date?

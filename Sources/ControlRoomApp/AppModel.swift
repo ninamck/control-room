@@ -7,7 +7,24 @@ import ControlRoomCore
 final class AppModel: ObservableObject {
     @Published private(set) var tickets: [Ticket] = []
     @Published private(set) var now = Date()
-    @Published var panelOpen = false
+    @Published var panelOpen = false {
+        // While the panel is open, keep "3s ago" counting. Closed, nothing ticks faster than every 20s.
+        didSet {
+            guard panelOpen != oldValue else { return }
+            secondHand?.invalidate()
+            secondHand = nil
+            if panelOpen {
+                now = Date()
+                secondHand = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                    Task { @MainActor in
+                        guard let self, self.showWorking, self.workingCount > 0 else { return }
+                        self.now = Date()
+                    }
+                }
+            }
+        }
+    }
+    private var secondHand: Timer?
     /// Whether the panel lists what's working under the Working count. Remembered between opens.
     @Published var showWorking = false
     /// Set when the local server couldn't start, shown at the top of the panel.
