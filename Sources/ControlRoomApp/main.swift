@@ -69,7 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard path.hasPrefix("\(home)/Applications/") || path.hasPrefix("/Applications/") else { return }
         let login = SMAppService.mainApp
         // Only the first time: if she turns it off in System Settings, it stays off.
-        guard login.status == .notRegistered, !UserDefaults.standard.bool(forKey: "askedToStartAtLogin") else { return }
+        // Before the first request macOS may say "not found" rather than "not registered".
+        guard login.status != .enabled, login.status != .requiresApproval,
+              !UserDefaults.standard.bool(forKey: "askedToStartAtLogin") else { return }
         UserDefaults.standard.set(true, forKey: "askedToStartAtLogin")
         try? login.register()
     }
