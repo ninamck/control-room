@@ -43,7 +43,8 @@ func serve(config: Config) -> Never {
     timer.schedule(deadline: .now() + 30, repeating: 30)
     timer.setEventHandler { try? store.tick() }
     timer.resume()
-    dispatchMain()
+    // Release builds free locals after their last use; keep these alive for the life of the process.
+    withExtendedLifetime((server, timer)) { dispatchMain() }
 }
 
 // MARK: Client
