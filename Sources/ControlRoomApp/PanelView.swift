@@ -6,6 +6,7 @@ struct PanelView: View {
     @ObservedObject var model: AppModel
     /// Most rows shown before "and N more".
     static let maxRows = 6
+    static let maxWorkingRows = 8
     static let width: CGFloat = 520
 
     var body: some View {
@@ -41,6 +42,19 @@ struct PanelView: View {
                         .bottomRule()
                 }
                 counts
+                if model.showWorking {
+                    let working = model.working
+                    ForEach(working.prefix(Self.maxWorkingRows)) { ticket in
+                        WorkingRow(ticket: ticket, model: model)
+                    }
+                    if working.count > Self.maxWorkingRows {
+                        Text("and \(working.count - Self.maxWorkingRows) more")
+                            .font(Theme.font(12, .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .bottomRule()
+                    }
+                }
                 QuickAddField(model: model)
             }
             .background(Theme.white)
@@ -72,7 +86,7 @@ struct PanelView: View {
 
     private var counts: some View {
         HStack(spacing: 0) {
-            CountBlock(number: model.workingCount, label: "WORKING", colour: Theme.sky)
+            WorkingToggle(model: model)
                 .overlay(alignment: .trailing) { Theme.ink.frame(width: 1) }
             CountBlock(number: model.doneCount, label: "DONE TODAY", colour: Theme.mint)
         }
@@ -189,6 +203,76 @@ struct CountBlock: View {
         .padding(.horizontal, 16).padding(.vertical, 12)
         .background(colour)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The Working count, which also shows or hides the list of what's running.
+struct WorkingToggle: View {
+    @ObservedObject var model: AppModel
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        let count = model.workingCount
+        Button { model.showWorking.toggle() } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(count)").font(Theme.font(26, .black))
+                Text("WORKING").label(11)
+                Spacer(minLength: 0)
+                if count > 0 {
+                    Text(model.showWorking ? "HIDE" : "SHOW").label(10, tracking: 0.08)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CellStyle(fill: Theme.sky))
+        .disabled(count == 0)
+        .focusable()
+        .focused($focused)
+        .focusEffectDisabled()
+        .overlay { if focused { Rectangle().strokeBorder(Theme.ink, lineWidth: 3) } }
+        .accessibilityLabel("\(count) working")
+        .accessibilityHint(model.showWorking ? "Hides the list" : "Shows what's running")
+    }
+}
+
+/// One running agent: compact, no actions beyond Open. Working never asks for attention.
+struct WorkingRow: View {
+    let ticket: Ticket
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(Wait(since: ticket.stateSince, now: model.now).phrase)
+                .font(Theme.font(11, .black))
+                .frame(width: 64)
+                .frame(maxHeight: .infinity)
+                .background(Theme.sky)
+                .overlay(alignment: .trailing) { Theme.ink.frame(width: 1) }
+                .accessibilityLabel("Running for \(Wait(since: ticket.stateSince, now: model.now).phrase)")
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    ToolBadge(tool: ticket.tool, size: 12)
+                    Text(ticket.thread.isEmpty ? ticket.tool.displayName : "\(ticket.tool.displayName) · \(ticket.thread)")
+                        .font(Theme.font(10.5, .bold))
+                        .lineLimit(1)
+                }
+                Text(ticket.title)
+                    .font(Theme.font(13.5, .bold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            CellButton(title: "OPEN", strong: true, divider: false) { model.open(ticket) }
+                .frame(width: 90)
+                .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
+        }
+        .frame(height: 46)
+        .bottomRule()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(ticket.tool.displayName): \(ticket.title)")
     }
 }
 

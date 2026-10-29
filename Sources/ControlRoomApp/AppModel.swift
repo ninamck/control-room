@@ -8,6 +8,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var tickets: [Ticket] = []
     @Published private(set) var now = Date()
     @Published var panelOpen = false
+    /// Whether the panel lists what's working under the Working count. Remembered between opens.
+    @Published var showWorking = false
     /// Set when the local server couldn't start, shown at the top of the panel.
     @Published private(set) var serverProblem: String?
 
@@ -57,7 +59,12 @@ final class AppModel: ObservableObject {
             .sorted { $0.stateSince < $1.stateSince }
     }
 
-    var workingCount: Int { tickets.filter { $0.state == .working }.count }
+    /// Running agents, longest running first.
+    var working: [Ticket] {
+        tickets.filter { $0.state == .working }.sorted { $0.stateSince < $1.stateSince }
+    }
+
+    var workingCount: Int { working.count }
     var doneCount: Int { tickets.filter { $0.state == .done }.count }
 
     var face: Face {

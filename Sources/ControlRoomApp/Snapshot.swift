@@ -16,12 +16,15 @@ enum Snapshot {
         _ = try? store.add(Ticket(tool: .claudeAI, source: .automatic, title: "PRD v0.2 ready for review", thread: "Quick Count PRD", stateSince: ago(7)))
         _ = try? store.add(Ticket(tool: .grok, title: "Competitor pricing research", stateSince: ago(31)))
         _ = try? store.add(Ticket(tool: .devin, source: .automatic, title: "PR #412: approve to merge", thread: "transfer-requests", stateSince: ago(2)))
-        for _ in 0..<5 { _ = try? store.add(Ticket(tool: .claudeCode, title: "w", state: .working)) }
+        _ = try? store.add(Ticket(tool: .cursor, source: .automatic, title: "Does this go across to how the variances are viewed? So all storage areas…", thread: "New AI direction 20260327", state: .working, stateSince: ago(4)))
+        _ = try? store.add(Ticket(tool: .claudeCode, source: .automatic, title: "Mixpanel plan: mapping AI events", thread: "edify-web", state: .working, stateSince: ago(11)))
+        _ = try? store.add(Ticket(tool: .grok, title: "Competitor pricing research", state: .working, stateSince: ago(2)))
         for _ in 0..<4 { _ = try? store.add(Ticket(tool: .cursor, title: "d", state: .done)) }
 
         let model = AppModel(store: store)
         model.reload()
         model.panelOpen = true
+        model.showWorking = true
         save(PanelView(model: model).padding(.trailing, 8).padding(.bottom, 8).padding(40).background(Theme.lavender),
              to: folder.appendingPathComponent("panel.png"))
 
