@@ -34,6 +34,9 @@ enum Snapshot {
         save(PanelView(model: model).padding(.trailing, 8).padding(.bottom, 8).padding(40).background(Theme.lavender),
              to: folder.appendingPathComponent("panel.png"))
 
+        model.panelOpen = false
+        save(BoardView(model: model, scrolls: false).frame(width: 1280, height: 800), to: folder.appendingPathComponent("board.png"))
+
         let faces = HStack(spacing: 20) {
             ForEach(Face.allCases, id: \.self) { face in
                 VStack(spacing: 8) {

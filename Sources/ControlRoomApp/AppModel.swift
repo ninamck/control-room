@@ -8,19 +8,26 @@ final class AppModel: ObservableObject {
     @Published private(set) var tickets: [Ticket] = []
     @Published private(set) var now = Date()
     @Published var panelOpen = false {
-        // While the panel is open, keep "3s ago" counting. Closed, nothing ticks faster than every 20s.
-        didSet {
-            guard panelOpen != oldValue else { return }
-            secondHand?.invalidate()
-            secondHand = nil
-            if panelOpen {
-                now = Date()
-                secondHand = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-                    Task { @MainActor in
-                        guard let self, self.showWorking, self.workingCount > 0 else { return }
-                        self.now = Date()
-                    }
-                }
+        didSet { if panelOpen != oldValue { updateSecondHand() } }
+    }
+    /// Whether the board window is on screen.
+    @Published var boardOpen = false {
+        didSet { if boardOpen != oldValue { updateSecondHand() } }
+    }
+    /// Opens the board window. Set by the app at launch.
+    var openBoard: () -> Void = {}
+
+    /// While the panel or board is showing running agents, keep "3s ago" counting.
+    /// Otherwise nothing ticks faster than every 20s.
+    private func updateSecondHand() {
+        secondHand?.invalidate()
+        secondHand = nil
+        guard panelOpen || boardOpen else { return }
+        now = Date()
+        secondHand = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.workingCount > 0, self.boardOpen || self.showWorking else { return }
+                self.now = Date()
             }
         }
     }
@@ -88,10 +95,21 @@ final class AppModel: ObservableObject {
     }
 
     var workingCount: Int { working.count }
-    var doneCount: Int { tickets.filter { $0.state == .done }.count }
+
+    /// Finished today, most recent first.
+    var done: [Ticket] {
+        tickets.filter { $0.state == .done }.sorted { $0.stateSince > $1.stateSince }
+    }
+
+    var doneCount: Int { done.count }
 
     var face: Face {
         if panelOpen { return .expanded }
+        return restingFace
+    }
+
+    /// The face as it would be with the panel closed: what's waiting, not whether it's being looked at.
+    var restingFace: Face {
         // Scheduled output never wakes the companion.
         let wakers = waiting.filter { $0.kind == .interactive }
         if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .overdue }

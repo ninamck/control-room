@@ -5,6 +5,8 @@ import SwiftUI
 /// If no tool is named, four tool squares appear to pick one.
 struct QuickAddField: View {
     @ObservedObject var model: AppModel
+    /// The panel's footer has Open Board beside the field (reference/02-notch-panel.html); the board's own doesn't.
+    var showsOpenBoard = false
     @State private var text = ""
     @State private var chosen: Tool?
     @FocusState private var fieldFocused: Bool
@@ -34,6 +36,11 @@ struct QuickAddField: View {
                     .padding(.trailing, 16)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Tool: \(tool.displayName)")
+                }
+                if showsOpenBoard {
+                    CellButton(title: "OPEN BOARD", strong: true, width: 120, divider: false) { model.openBoard() }
+                        .frame(height: 44)
+                        .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
                 }
             }
             if !text.trimmingCharacters(in: .whitespaces).isEmpty && parsed.tool == nil {

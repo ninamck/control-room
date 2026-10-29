@@ -55,7 +55,7 @@ struct PanelView: View {
                             .bottomRule()
                     }
                 }
-                QuickAddField(model: model)
+                QuickAddField(model: model, showsOpenBoard: true)
             }
             .background(Theme.white)
             .overlay(Rectangle().strokeBorder(Theme.ink, lineWidth: 1).padding(.top, -1))
