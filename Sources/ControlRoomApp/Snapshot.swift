@@ -12,7 +12,10 @@ enum Snapshot {
         guard let store = try? TicketStore(fileURL: file) else { return }
         let now = Date()
         func ago(_ m: Double) -> Date { now.addingTimeInterval(-m * 60) }
-        _ = try? store.add(Ticket(tool: .cursor, source: .automatic, title: "Recipe variants: modifier group nav", thread: "edify-web", stateSince: ago(18)))
+        var finished = Ticket(tool: .cursor, source: .automatic, title: "When I click check out it scrolls me to the bottom rather than the top", thread: "edify-web",
+                              lastMessage: "Checkout now opens at the top, and so does the **Orders sent** page after placing orders.\n\nThe app was keeping the scroll position from one page to the next.", stateSince: ago(18))
+        finished.chatName = "Predictive ordering UI sweep"
+        _ = try? store.add(finished)
         _ = try? store.add(Ticket(tool: .claudeAI, source: .automatic, title: "PRD v0.2 ready for review", thread: "Quick Count PRD", stateSince: ago(7)))
         _ = try? store.add(Ticket(tool: .grok, title: "Competitor pricing research", stateSince: ago(31)))
         _ = try? store.add(Ticket(tool: .devin, source: .automatic, title: "PR #412: approve to merge", thread: "transfer-requests", stateSince: ago(2)))

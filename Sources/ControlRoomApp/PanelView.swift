@@ -129,22 +129,21 @@ struct TicketRow: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Waiting \(wait.phrase)")
 
-            if ticket.source == .manual {
-                VStack(spacing: 0) {
-                    details.padding(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
-                    HStack(spacing: 0) {
-                        CellButton(title: "✓ DONE", fill: Theme.mint, strong: true) { model.apply(.done, to: ticket) }
+            VStack(spacing: 0) {
+                details.padding(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
+                HStack(spacing: 0) {
+                    // Done is always Nina's call. Manual tickets can also go back to running;
+                    // agent tickets go back on their own when she prompts again, so they get Later instead.
+                    CellButton(title: "✓ DONE", fill: Theme.mint, strong: true) { model.apply(.done, to: ticket) }
+                    if ticket.source == .manual {
                         CellButton(title: "STILL RUNNING") { model.apply(.stillRunning, to: ticket) }
-                        CellButton(title: "OPEN", strong: true, width: 90, divider: false) { model.open(ticket) }
+                    } else if ticket.state == .needsYou {
+                        CellButton(title: "LATER") { model.apply(.later, to: ticket) }
                     }
-                    .frame(height: 40)
-                    .overlay(alignment: .top) { Theme.ink.frame(height: 1) }
+                    CellButton(title: "OPEN", strong: true, width: 90, divider: false) { model.open(ticket) }
                 }
-            } else {
-                details.padding(.horizontal, 16).padding(.vertical, 12)
-                CellButton(title: "OPEN", strong: true, divider: false) { model.open(ticket) }
-                    .frame(width: 90)
-                    .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
+                .frame(height: 40)
+                .overlay(alignment: .top) { Theme.ink.frame(height: 1) }
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -161,8 +160,30 @@ struct TicketRow: View {
                 .font(Theme.font(16, .bold))
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
+            if let reply = replyPreview {
+                Text(reply)
+                    .font(Theme.font(12.5, .regular))
+                    .foregroundStyle(Theme.bodyGrey)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+                    .accessibilityLabel("Reply: \(reply)")
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The start of the agent's last reply, so Nina can tell whether to go back now.
+    private var replyPreview: String? {
+        guard ticket.source == .automatic else { return nil }
+        let text = ticket.lastMessage
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "`", with: "")
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return text.isEmpty ? nil : text
     }
 
     /// "Cursor · Predictive ordering UI sweep", "Grok · added by you", "Devin · transfer-requests · blocked".

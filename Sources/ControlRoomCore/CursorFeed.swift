@@ -7,8 +7,7 @@ import Foundation
 ///   afterAgentResponse  keep the agent's reply as the last message
 ///   preToolUse          the agent is asking Nina a question: needs_you
 ///   postToolUse         she answered it: working
-///   stop                completed: needs_you if it ended on a question, otherwise done.
-///                       aborted: done. error: blocked.
+///   stop                completed: needs_you, it's Nina's turn. aborted (she stopped it): done. error: blocked.
 ///   sessionEnd          conversation closed while working: done
 ///
 /// A conversation that was already running before the hooks went in gets its ticket
@@ -122,10 +121,9 @@ public enum CursorFeed {
                 case "aborted":
                     try tickets[i].apply(.done, now: now)
                 default:
-                    // DECISIONS.md: ending on a question means it needs Nina; otherwise it's done.
-                    let question = QuestionDetector.detect(tickets[i].lastMessage)
-                    tickets[i].questionType = question
-                    try tickets[i].apply(question == .none ? .done : .needsYou, now: now)
+                    // DECISIONS.md: a finished reply is Nina's turn, so it waits on her until she marks it Done.
+                    tickets[i].questionType = QuestionDetector.detect(tickets[i].lastMessage)
+                    try tickets[i].apply(.needsYou, now: now)
                 }
                 return tickets[i]
 

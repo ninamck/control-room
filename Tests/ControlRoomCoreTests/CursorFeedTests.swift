@@ -24,13 +24,25 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(try store.all().count == 1)
 }
 
-@Test func finishingWithoutAQuestionIsDone() throws {
+@Test func aFinishedReplyWaitsOnNinaUntilSheMarksItDone() throws {
     let store = try makeStore()
     try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Refactor"]), store: store)
     try CursorFeed.handle(event("afterAgentResponse", ["text": "Done. All tests pass."]), store: store)
     let t = try CursorFeed.handle(event("stop", ["status": "completed"]), store: store)
-    #expect(t?.state == .done)
+    #expect(t?.state == .needsYou)
+    #expect(t?.questionType == QuestionType.none)
     #expect(t?.lastMessage == "Done. All tests pass.")
+
+    let marked = try store.apply(.done, to: t!.id)
+    #expect(marked.state == .done)
+    // Prompting the same chat again brings it back.
+    #expect(try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "One more thing"]), store: store)?.state == .working)
+}
+
+@Test func stoppingItYourselfIsDone() throws {
+    let store = try makeStore()
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "x"]), store: store)
+    #expect(try CursorFeed.handle(event("stop", ["status": "aborted"]), store: store)?.state == .done)
 }
 
 @Test func finishingOnAQuestionNeedsNina() throws {
@@ -98,7 +110,7 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     let reopened = try TicketStore(fileURL: file, now: { noon })
     try CursorFeed.handle(event("afterAgentResponse", ["text": "Fixed."]), store: reopened)
     let t = try CursorFeed.handle(event("stop", ["status": "completed"]), store: reopened)
-    #expect(t?.state == .done)
+    #expect(t?.state == .needsYou)
     #expect(t?.lastMessage == "Fixed.")
     #expect(try reopened.all().count == 1)
 }
@@ -119,7 +131,7 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(working?.title == "When I click check out it scrolls me to the bottom")
 
     let finished = try CursorFeed.handle(event("stop", ["status": "completed", "transcript_path": transcript.path]), store: store)
-    #expect(finished?.state == .done)
+    #expect(finished?.state == .needsYou)
     #expect(finished?.lastMessage == "Checkout now opens at the top.")
     #expect(try store.all().count == 1)
 }
