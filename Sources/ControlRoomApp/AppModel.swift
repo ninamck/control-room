@@ -39,10 +39,16 @@ final class AppModel: ObservableObject {
         } catch {
             serverProblem = "The local server couldn't start: \(error.localizedDescription)"
         }
+        // Catch up on anything Cursor sent while the app was closed.
+        EventQueue.drain(into: store)
         reload()
-        // Minutes tick over, Later tickets come back, done expires at midnight.
+        // Minutes tick over, Later tickets come back, done expires at midnight, and any stray queued events land.
         clock = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.reload() }
+            Task { @MainActor in
+                guard let self else { return }
+                EventQueue.drain(into: self.store)
+                self.reload()
+            }
         }
     }
 

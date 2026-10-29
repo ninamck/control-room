@@ -24,11 +24,15 @@ public enum CursorHooks {
     payload=$(cat)
     token=$(sed -n 's/.*"token" *: *"\\([^"]*\\)".*/\\1/p' "$CONFIG" 2>/dev/null)
     port=$(sed -n 's/.*"port" *: *\\([0-9]*\\).*/\\1/p' "$CONFIG" 2>/dev/null)
-    if [ -n "$token" ]; then
-      printf '%s' "$payload" | curl -s -m 2 -X POST \\
-        -H "Authorization: Bearer $token" -H "Content-Type: application/json" \\
-        --data-binary @- "http://127.0.0.1:${port:-47821}/feeds/cursor" >/dev/null 2>&1 &
-    fi
+    # If Control Room is closed or restarting, keep the event in a queue it reads when it's back.
+    QUEUE="$HOME/Library/Application Support/Control Room/queue/cursor"
+    (
+      if [ -z "$token" ] || ! printf '%s' "$payload" | curl -sf -m 2 -X POST \\
+          -H "Authorization: Bearer $token" -H "Content-Type: application/json" \\
+          --data-binary @- "http://127.0.0.1:${port:-47821}/feeds/cursor" >/dev/null 2>&1; then
+        mkdir -p "$QUEUE" && printf '%s' "$payload" > "$QUEUE/$(date +%s)-$$.json"
+      fi
+    ) </dev/null >/dev/null 2>&1 &
     case "$payload" in
       *'"beforeSubmitPrompt"'*) echo '{"continue": true}' ;;
       *) echo '{}' ;;

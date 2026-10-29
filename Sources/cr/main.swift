@@ -33,6 +33,7 @@ func fail(_ message: String) -> Never {
 func serve(config: Config) -> Never {
     let store: TicketStore
     do { store = try TicketStore() } catch { fail("Couldn't read tickets.json: \(error.localizedDescription)") }
+    EventQueue.drain(into: store)
     let api = API(store: store, token: config.token)
     let server: HTTPServer
     do { server = try HTTPServer(port: config.port) { api.handle($0) } } catch { fail("Couldn't start: \(error)") }
@@ -44,7 +45,10 @@ func serve(config: Config) -> Never {
     // Later tickets come back and done tickets expire even when nobody is asking.
     let timer = DispatchSource.makeTimerSource(queue: .global())
     timer.schedule(deadline: .now() + 30, repeating: 30)
-    timer.setEventHandler { try? store.tick() }
+    timer.setEventHandler {
+        EventQueue.drain(into: store)
+        try? store.tick()
+    }
     timer.resume()
     // Release builds free locals after their last use; keep these alive for the life of the process.
     withExtendedLifetime((server, timer)) { dispatchMain() }

@@ -71,14 +71,71 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(try CursorFeed.handle(event("stop", ["status": "error"]), store: store)?.state == .blocked)
     let again = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "try again"]), store: store)
     #expect(again?.state == .working)
-    #expect(again?.title == "x")  // keeps its first title
+    #expect(again?.title == "try again")  // follows what Nina last asked
     #expect(try store.all().count == 1)
 }
 
-@Test func eventsForUnknownConversationsAreIgnored() throws {
+@Test func ticketsStillMatchAfterTheAppRestarts() throws {
+    let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".json")
+    let first = try TicketStore(fileURL: file, now: { noon })
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Checkout scroll"]), store: first)
+
+    let reopened = try TicketStore(fileURL: file, now: { noon })
+    try CursorFeed.handle(event("afterAgentResponse", ["text": "Fixed."]), store: reopened)
+    let t = try CursorFeed.handle(event("stop", ["status": "completed"]), store: reopened)
+    #expect(t?.state == .done)
+    #expect(t?.lastMessage == "Fixed.")
+    #expect(try reopened.all().count == 1)
+}
+
+@Test func chatsAlreadyRunningAppearOnTheirFirstEvent() throws {
+    let transcript = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jsonl")
+    let lines = [
+        #"{"role":"user","message":{"content":[{"type":"text","text":"<external_links>stuff</external_links><user_query>https://linear.app/edify/project/predictive-ordering-ai-rules-and-ui-sweep-8c6</user_query>"}]}}"#,
+        #"{"role":"assistant","message":{"content":[{"type":"text","text":"Plan ready."}]}}"#,
+        #"{"role":"user","message":{"content":[{"type":"text","text":"<timestamp>x</timestamp><user_query>\nWhen I click check out it scrolls me to the bottom\n</user_query>"}]}}"#,
+        #"{"role":"assistant","message":{"content":[{"type":"text","text":"Checkout now opens at the top."}]}}"#,
+    ]
+    try lines.joined(separator: "\n").write(to: transcript, atomically: true, encoding: .utf8)
+
     let store = try makeStore()
-    #expect(try CursorFeed.handle(event("stop", ["status": "completed"]), store: store) == nil)
+    let working = try CursorFeed.handle(event("preToolUse", ["tool_name": "Shell", "transcript_path": transcript.path]), store: store)
+    #expect(working?.state == .working)
+    #expect(working?.title == "When I click check out it scrolls me to the bottom")
+
+    let finished = try CursorFeed.handle(event("stop", ["status": "completed", "transcript_path": transcript.path]), store: store)
+    #expect(finished?.state == .done)
+    #expect(finished?.lastMessage == "Checkout now opens at the top.")
+    #expect(try store.all().count == 1)
+}
+
+@Test func pastedPageElementsKeepTheTitle() throws {
+    let store = try makeStore()
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "When I click check out it scrolls"]), store: store)
+    let pasted = "DOM Path: div#root > div.flex\nPosition: top=296px, left=147px\nHTML Element: <div class=\"x\">"
+    let t = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": pasted]), store: store)
+    #expect(t?.title == "When I click check out it scrolls")
+    #expect(CursorFeed.title(from: pasted + "\nmake this box smaller") == "make this box smaller")
+}
+
+@Test func toolUseAfterFinishingMeansWorkingAgain() throws {
+    let store = try makeStore()
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "x"]), store: store)
+    try CursorFeed.handle(event("stop", ["status": "completed"]), store: store)
+    let t = try CursorFeed.handle(event("preToolUse", ["tool_name": "Shell"]), store: store)
+    #expect(t?.state == .working)
+}
+
+@Test func closedChatsWeNeverSawAreIgnored() throws {
+    let store = try makeStore()
+    #expect(try CursorFeed.handle(event("sessionEnd", ["reason": "user_close"]), store: store) == nil)
     #expect(try store.all().isEmpty)
+}
+
+@Test func linksBecomeReadableTitles() {
+    #expect(CursorFeed.title(from: "https://linear.app/edify-systems/project/predictive-ordering-ai-rules-and-ui-sweep-8c6")
+            == "Predictive ordering ai rules and ui sweep")
+    #expect(CursorFeed.title(from: "Fix the nav https://x.com/a") == "Fix the nav https://x.com/a")
 }
 
 @Test func detectsQuestions() {
