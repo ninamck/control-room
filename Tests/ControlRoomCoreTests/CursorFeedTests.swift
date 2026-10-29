@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Testing
 @testable import ControlRoomCore
 
@@ -152,6 +153,41 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     try CursorFeed.handle(event("stop", ["status": "completed"]), store: store)
     let t = try CursorFeed.handle(event("preToolUse", ["tool_name": "Shell"]), store: store)
     #expect(t?.state == .working)
+}
+
+@Test func ticketsCarryCursorsChatName() throws {
+    // A stand-in for Cursor's state database with one named chat.
+    let dbPath = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".vscdb").path
+    var db: OpaquePointer?
+    #expect(sqlite3_open(dbPath, &db) == SQLITE_OK)
+    sqlite3_exec(db, "CREATE TABLE cursorDiskKV (key TEXT UNIQUE ON CONFLICT REPLACE, value BLOB);", nil, nil, nil)
+    sqlite3_exec(db, #"INSERT INTO cursorDiskKV VALUES ('composerData:named-chat', '{"name":"Predictive ordering UI sweep"}');"#, nil, nil, nil)
+    sqlite3_close(db)
+    setenv("CONTROL_ROOM_CURSOR_STATE_DB", dbPath, 1)
+    defer { unsetenv("CONTROL_ROOM_CURSOR_STATE_DB") }
+
+    #expect(CursorChatNames.name(for: "named-chat") == "Predictive ordering UI sweep")
+    #expect(CursorChatNames.name(for: "no-such-chat") == nil)
+
+    let store = try makeStore()
+    let named = try CursorFeed.handle(["hook_event_name": "beforeSubmitPrompt", "conversation_id": "named-chat",
+                                       "prompt": "can you make this look nice?"], store: store)
+    #expect(named?.chatName == "Predictive ordering UI sweep")
+    #expect(named?.contextName == "Predictive ordering UI sweep")
+    #expect(named?.title == "can you make this look nice?")
+
+    // No Cursor name: the first message names it, and the project is the fallback after that.
+    let transcript = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jsonl")
+    try [#"{"role":"user","message":{"content":[{"type":"text","text":"<user_query>Can you create a UI pass ticket</user_query>"}]}}"#,
+         #"{"role":"user","message":{"content":[{"type":"text","text":"<user_query>Latest thing</user_query>"}]}}"#]
+        .joined(separator: "\n").write(to: transcript, atomically: true, encoding: .utf8)
+    let unnamed = try CursorFeed.handle(["hook_event_name": "preToolUse", "conversation_id": "unnamed-chat", "tool_name": "Read",
+                                         "transcript_path": transcript.path], store: store)
+    #expect(unnamed?.chatName == "Can you create a UI pass ticket")
+    #expect(unnamed?.title == "Latest thing")
+
+    setenv("CONTROL_ROOM_CURSOR_STATE_DB", "/nonexistent/state.vscdb", 1)
+    #expect(CursorChatNames.name(for: "named-chat") == nil)
 }
 
 @Test func closedChatsWeNeverSawAreIgnored() throws {

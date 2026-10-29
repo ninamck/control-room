@@ -113,6 +113,8 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     /// For automatic tickets: the feed's own id, like "cursor:<conversation id>", so later events find the same ticket.
     /// Spelled "Id", not "ID": tickets.json uses snake_case, and "external_id" only reads back into "externalId".
     public var externalId: String?
+    /// The chat's own name in the tool, like Cursor's "Predictive ordering UI sweep".
+    public var chatName: String?
     /// For automatic tickets while working: what the agent is doing right now, like "Running npm test".
     public var activity: String?
     /// When that activity was last reported.
@@ -152,6 +154,9 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
         self.laterCount = laterCount
         self.schedule = schedule
     }
+
+    /// What to call where this lives: the chat's name if known, otherwise the project.
+    public var contextName: String { chatName ?? thread }
 
     /// Short id for typing at the command line.
     public var shortID: String { String(id.prefix(6)) }

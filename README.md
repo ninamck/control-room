@@ -53,7 +53,9 @@ The app runs the local server, so `./cr` works whenever the app is open:
 
 Adds Control Room to Cursor's hooks (`~/.cursor/hooks.json`, plus `~/.cursor/hooks/control-room.sh`). From then on every Cursor agent chat becomes a ticket on its own: Working while it runs, Waiting on you when it asks a question (including the Questions prompt), Done when it finishes, Blocked if it errors. Open brings up that project's Cursor window. Other hooks in that file are kept. `./cr remove-cursor-hooks` takes it out again.
 
-The hook answers Cursor immediately and sends the event in the background, so it never slows an agent down, even when Control Room is closed. The last 300 events (names only, no message text) are in `feed-events.log` next to the tickets.
+Each ticket shows the chat's name from Cursor ("Predictive ordering UI sweep"), your latest message as its title, and, while it's working, what it's doing right now. Chat names are read from Cursor's database, read-only and names only (`CursorChatNames.swift`); if that ever fails, the chat's first message is used instead.
+
+The hook answers Cursor immediately and sends the event in the background, so it never slows an agent down. If Control Room is closed, events wait in `queue/cursor` and are applied when it opens. The last 300 events (names only, no message text) are in `feed-events.log` next to the tickets.
 
 ## Adding a tool feed
 

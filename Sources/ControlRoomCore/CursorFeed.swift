@@ -24,6 +24,10 @@ public enum CursorFeed {
         let key = "cursor:\(conversation)"
         let folder = (payload["workspace_roots"] as? [String])?.first
         let transcript = (payload["transcript_path"] as? String).map(CursorTranscript.init(path:))
+        // Looked up before taking the store's lock, so a slow read never holds up other events.
+        // Cursor names a chat after its first reply, so keep asking until it has one.
+        let cursorName = CursorChatNames.name(for: conversation)
+        let chatName = cursorName ?? transcript?.firstQuestion().flatMap(title(from:))
 
         return try store.update { tickets, now in
             func newTicket(title: String) -> Int {
@@ -31,8 +35,17 @@ public enum CursorFeed {
                                     thread: folder.flatMap(QuickAdd.threadName(forLink:)) ?? "",
                                     deepLink: folder ?? "", state: .working, stateSince: now)
                 ticket.externalId = key
+                ticket.chatName = chatName
                 tickets.append(ticket)
                 return tickets.count - 1
+            }
+            // Cursor's own name always wins; the first-message name only fills a gap, so a busy moment can't swap it back.
+            if let i = tickets.firstIndex(where: { $0.externalId == key }) {
+                if let cursorName, tickets[i].chatName != cursorName {
+                    tickets[i].chatName = cursorName
+                } else if tickets[i].chatName == nil, let chatName {
+                    tickets[i].chatName = chatName
+                }
             }
             /// The ticket for this conversation, made now if it started before the hooks were installed.
             func ticketIndex() -> Int {
@@ -245,6 +258,23 @@ struct CursorTranscript {
     func lastQuestion() -> String? {
         for message in messages().reversed() where message.role == "user" {
             if let query = Self.userQuery(in: message.text), CursorFeed.title(from: query) != nil { return query }
+        }
+        return nil
+    }
+
+    /// Nina's first message with words of her own, used to name the chat when Cursor's name can't be read.
+    /// Reads from the start of the file, stopping at the first one.
+    func firstQuestion() -> String? {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return nil }
+        defer { try? handle.close() }
+        guard let data = try? handle.read(upToCount: Self.tailBytes), let text = String(data: data, encoding: .utf8) else { return nil }
+        for line in text.split(separator: "\n") {
+            guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                  object["role"] as? String == "user",
+                  let content = (object["message"] as? [String: Any])?["content"] as? [[String: Any]] else { continue }
+            for part in content {
+                if let t = part["text"] as? String, let query = Self.userQuery(in: t), CursorFeed.title(from: query) != nil { return query }
+            }
         }
         return nil
     }

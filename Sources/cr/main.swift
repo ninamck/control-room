@@ -88,7 +88,7 @@ let clock: DateFormatter = {
 }()
 
 func line(_ t: Ticket, _ now: Date) -> String {
-    let where_ = t.thread.isEmpty ? t.tool.displayName : "\(t.tool.displayName) · \(t.thread)"
+    let where_ = t.contextName.isEmpty ? t.tool.displayName : "\(t.tool.displayName) · \(t.contextName)"
     let colour = t.signal(at: now).rawValue.uppercased().padding(toLength: 6, withPad: " ", startingAt: 0)
     let time = elapsed(t.stateSince, now).padding(toLength: 8, withPad: " ", startingAt: 0)
     var out = "  \(t.shortID)  \(colour) \(time) [\(t.tool.initial)] \(where_) — \(t.title)"

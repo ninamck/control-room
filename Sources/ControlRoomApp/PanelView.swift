@@ -165,10 +165,10 @@ struct TicketRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// "Cursor · edify-web", "Grok · added by you", "Devin · transfer-requests · blocked".
+    /// "Cursor · Predictive ordering UI sweep", "Grok · added by you", "Devin · transfer-requests · blocked".
     private var context: String {
         var parts = [ticket.tool.displayName]
-        parts.append(ticket.thread.isEmpty ? (ticket.source == .manual ? "added by you" : "") : ticket.thread)
+        parts.append(ticket.contextName.isEmpty ? (ticket.source == .manual ? "added by you" : "") : ticket.contextName)
         if ticket.state == .blocked { parts.append("blocked") }
         return parts.filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -254,7 +254,7 @@ struct WorkingRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     ToolBadge(tool: ticket.tool, size: 12)
-                    Text(ticket.thread.isEmpty ? ticket.tool.displayName : "\(ticket.tool.displayName) · \(ticket.thread)")
+                    Text(ticket.contextName.isEmpty ? ticket.tool.displayName : "\(ticket.tool.displayName) · \(ticket.contextName)")
                         .font(Theme.font(10.5, .bold))
                         .lineLimit(1)
                 }
