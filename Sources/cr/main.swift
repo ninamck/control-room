@@ -23,6 +23,7 @@ Control Room
   cr set-notion-token              connect the Ready to delegate list to Notion
   cr set-devin-token               connect your Devin sessions
   cr set-calendar-link             connect your calendar for the next hard stop
+  cr calendar [tomorrow]           today's (or tomorrow's) meetings and the next hard stop
 
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
@@ -254,6 +255,33 @@ case "set-calendar-link":
     case .failure(let error)?: fail(error.localizedDescription)
     case nil: fail("Couldn't check the link.")
     }
+case "calendar":
+    // Today's hard stops, worked out exactly as the app does.
+    guard let link = config.calendarLink else { fail("Calendar not connected. Run: cr set-calendar-link") }
+    var fetched: Result<String, Error>?
+    let got = DispatchSemaphore(value: 0)
+    Task {
+        do { fetched = .success(try await ICSCalendar.fetch(link)) } catch { fetched = .failure(error) }
+        got.signal()
+    }
+    got.wait()
+    guard case .success(let text)? = fetched else {
+        if case .failure(let error)? = fetched { fail(error.localizedDescription) }
+        fail("Couldn't read the calendar.")
+    }
+    // `cr calendar tomorrow` looks at tomorrow from 07:00.
+    let tomorrow = args.dropFirst().first == "tomorrow"
+    let now = tomorrow
+        ? Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Calendar.current.date(byAdding: .day, value: 1, to: Date())!)!
+        : Date()
+    let today = ICSCalendar.events(on: now, in: text)
+        .filter { $0.busy && !$0.allDay && !$0.declined }
+        .sorted { $0.start < $1.start }
+    if today.isEmpty { print("No busy meetings today.") }
+    for event in today {
+        print("  \(clock.string(from: event.start))  \(event.title)\(event.start <= now ? "  (started)" : "")")
+    }
+    print(HardStop.next(in: today, now: now).map { $0.line(now) } ?? "No more hard stops today.")
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)
 }

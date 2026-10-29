@@ -102,3 +102,9 @@ END:VCALENDAR
     let day = ISO8601DateFormatter().date(from: "2026-10-29T08:00:00Z")!
     #expect(ICSCalendar.events(on: day, in: ended, calendar: cal).isEmpty)
 }
+
+@Test func meetingTitlesLoseTheirEmoji() {
+    #expect(ICSCalendar.withoutEmoji("🔪 The Big Chop") == "The Big Chop")
+    #expect(ICSCalendar.withoutEmoji("🍿 Popcorn time") == "Popcorn time")
+    #expect(ICSCalendar.withoutEmoji("Ed // Pyke Sync #2") == "Ed // Pyke Sync #2")
+}

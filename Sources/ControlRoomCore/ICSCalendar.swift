@@ -92,7 +92,7 @@ public enum ICSCalendar {
             }, uniquingKeysWith: { a, _ in a })
             switch name {
             case "UID": current!.uid = value
-            case "SUMMARY": current!.summary = unescape(value)
+            case "SUMMARY": current!.summary = withoutEmoji(unescape(value))
             case "DTSTART":
                 current!.allDay = params["VALUE"] == "DATE" || value.count == 8
                 current!.start = date(value, tz: params["TZID"])
@@ -131,6 +131,16 @@ public enum ICSCalendar {
             f.timeZone = tz.flatMap(TimeZone.init(identifier:)) ?? .current
         }
         return f.date(from: value)
+    }
+
+    /// The app never shows emoji (SPEC section 7): "🔪 The Big Chop" → "The Big Chop".
+    static func withoutEmoji(_ text: String) -> String {
+        let kept = text.unicodeScalars.filter { scalar in
+            !(scalar.properties.isEmojiPresentation || (scalar.properties.isEmoji && scalar.value > 0x2000)
+              || scalar.value == 0xFE0F || scalar.value == 0x200D)
+        }
+        let cleaned = String(String.UnicodeScalarView(kept)).trimmingCharacters(in: .whitespaces)
+        return cleaned.isEmpty ? text : cleaned
     }
 
     static func unescape(_ text: String) -> String {
