@@ -1,7 +1,7 @@
 import Foundation
 
 /// The "Ready to delegate" list: Task Tracker tasks with Agent ticked that aren't Done or Cancelled.
-/// Read-only. Nothing is written back to Notion in v1 (SPEC section 5).
+/// Read-only, with one exception Nina chose (DECISIONS.md): dropping a put-off ticket at End of day unticks Agent.
 public enum NotionReady {
     /// Brain → Task Tracker.
     public static let taskTracker = "328c88a0-34db-8090-9ac8-000b36dd7c37"
@@ -60,6 +60,22 @@ public enum NotionReady {
             }
         }
         return (json["results"] as? [[String: Any]] ?? []).compactMap(item)
+    }
+
+    /// Unticks Agent on a Task Tracker row, so a dropped task leaves Ready to delegate.
+    public static func untickAgent(page: String, token: String) async throws {
+        var request = URLRequest(url: URL(string: "https://api.notion.com/v1/pages/\(page)")!)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("2025-09-03", forHTTPHeaderField: "Notion-Version")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 10
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["properties": ["Agent": ["checkbox": false]]])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            let message = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["message"] as? String
+            throw Problem(message: "Notion didn't untick Agent: \(message ?? "unknown error")")
+        }
     }
 
     static func item(_ page: [String: Any]) -> Item? {

@@ -50,6 +50,7 @@ struct BoardView: View {
                 .padding(.trailing, 4)
             ShadowButton(title: adding ? "CLOSE" : "+ ADD") { adding.toggle() }
                 .accessibilityLabel(adding ? "Close add a ticket" : "Add a ticket")
+            ShadowButton(title: "END OF DAY") { model.openEndOfDay() }
             ShadowButton(title: "HAND OFF", fill: Theme.yellow) { model.openHandOff(nil) }
         }
         .padding(.horizontal, 32)

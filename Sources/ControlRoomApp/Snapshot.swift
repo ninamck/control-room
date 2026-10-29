@@ -6,7 +6,11 @@ import SwiftUI
 /// Run: ControlRoom --snapshot <folder>
 @MainActor
 enum Snapshot {
+    /// True while rendering, so views can skip what the image renderer can't draw.
+    static var rendering = false
+
     static func render(to folder: URL) {
+        rendering = true
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("snapshot-\(UUID().uuidString).json")
         guard let store = try? TicketStore(fileURL: file) else { return }
@@ -27,7 +31,9 @@ enum Snapshot {
         _ = try? store.add(Ticket(tool: .grok, title: "Competitor pricing research", state: .working, stateSince: ago(2)))
         for _ in 0..<4 { _ = try? store.add(Ticket(tool: .cursor, title: "d", state: .done)) }
 
-        let model = AppModel(store: store)
+        let scratch = UserDefaults(suiteName: "local.nina.controlroom.snapshot")!
+        scratch.removePersistentDomain(forName: "local.nina.controlroom.snapshot")
+        let model = AppModel(store: store, defaults: scratch)
         model.reload()
         model.panelOpen = true
         model.showWorking = true
@@ -41,6 +47,18 @@ enum Snapshot {
         form.brief = "Draft the corrective actions table for the Checklists PRD: one row per failed check type, who gets alerted, what the GM has to do, and when it escalates. Use the audits section as the source."
         form.folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Claude-code/control-room").path
         save(HandOffView(model: model, form: form, close: {}).frame(width: 1280, height: 800), to: folder.appendingPathComponent("handoff.png"))
+
+        var putOff = Ticket(tool: .cursor, title: "Transfer request empty states", stateSince: ago(300))
+        putOff.laterCount = 3
+        _ = try? store.add(putOff)
+        _ = try? store.add(Ticket(tool: .grok, title: "Summarise last three Pret calls for Alistair", state: .parked, stateSince: ago(3000)))
+        model.reload()
+        save(EndOfDayView(model: model, close: {}).frame(width: 1280, height: 800), to: folder.appendingPathComponent("endofday.png"))
+        model.quiet(minutes: 25)
+        model.panelOpen = true
+        save(PanelView(model: model).padding(.trailing, 8).padding(.bottom, 8).padding(40).background(Theme.lavender),
+             to: folder.appendingPathComponent("quiet.png"))
+        model.wake()
 
         let faces = HStack(spacing: 20) {
             ForEach(Face.allCases, id: \.self) { face in

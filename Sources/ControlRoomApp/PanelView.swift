@@ -67,22 +67,47 @@ struct PanelView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            FaceView(face: .expanded, pixel: 3.5)
-            Text(model.waiting.isEmpty ? "NOTHING WAITING" : "\(model.waiting.count) WAITING ON YOU")
-                .label(13)
-            Spacer()
-            if let oldest = model.waiting.first {
-                Text("oldest \(Wait(since: oldest.stateSince, now: model.now).phrase)")
-                    .font(Theme.font(12, .medium))
-                    .foregroundStyle(Theme.lavender)
+            FaceView(face: model.isQuiet ? .asleep : .expanded, pixel: 3.5)
+            if model.isQuiet, let until = model.quietUntil {
+                // reference/05-quiet-and-quick-reply.html
+                Text("QUIET UNTIL \(Self.clock.string(from: until))").label(13)
+                Spacer()
+                HeaderButtons(items: [("+25", false, { model.extendQuiet(minutes: 25) }),
+                                      ("+50", false, { model.extendQuiet(minutes: 50) }),
+                                      ("WAKE", true, { model.wake() })])
+            } else {
+                Text(model.waiting.isEmpty ? "NOTHING WAITING" : "\(model.waiting.count) WAITING ON YOU")
+                    .label(13)
+                Spacer()
+                if choosingQuiet {
+                    Text("QUIET FOR").label(11).foregroundStyle(Theme.lavender)
+                    HeaderButtons(items: [25, 50, 90].map { minutes in
+                        ("\(minutes)", false, { model.quiet(minutes: minutes); choosingQuiet = false })
+                    })
+                } else {
+                    if let oldest = model.waiting.first {
+                        Text("oldest \(Wait(since: oldest.stateSince, now: model.now).phrase)")
+                            .font(Theme.font(12, .medium))
+                            .foregroundStyle(Theme.lavender)
+                    }
+                    HeaderButtons(items: [("QUIET", false, { choosingQuiet = true })])
+                }
             }
         }
         .foregroundStyle(Theme.white)
         .padding(.horizontal, 16)
         .frame(height: 44)
         .background(Theme.ink)
-        .accessibilityElement(children: .combine)
     }
+
+    @State private var choosingQuiet = false
+
+    static let clock: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        return f
+    }()
 
     private var counts: some View {
         HStack(spacing: 0) {
@@ -91,6 +116,47 @@ struct PanelView: View {
             CountBlock(number: model.doneCount, label: "DONE TODAY", colour: Theme.mint)
         }
         .bottomRule()
+    }
+}
+
+/// Small outlined buttons on the black panel header, like +25 +50 WAKE in the quiet mockup.
+struct HeaderButtons: View {
+    let items: [(String, Bool, () -> Void)]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items.indices, id: \.self) { i in
+                HeaderButton(title: items[i].0, highlighted: items[i].1, divider: i < items.count - 1, action: items[i].2)
+            }
+        }
+        .frame(height: 28)
+        .overlay(Rectangle().strokeBorder(Theme.white, lineWidth: 1))
+    }
+}
+
+struct HeaderButton: View {
+    let title: String
+    let highlighted: Bool
+    let divider: Bool
+    let action: () -> Void
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .label(11, tracking: 0.04, weight: highlighted ? .black : .bold)
+                .foregroundStyle(highlighted ? Theme.ink : Theme.white)
+                .padding(.horizontal, 10)
+                .frame(maxHeight: .infinity)
+                .background(highlighted ? Theme.yellow : .clear)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusable()
+        .focused($focused)
+        .focusEffectDisabled()
+        .overlay { if focused { Rectangle().strokeBorder(Theme.yellow, lineWidth: 2) } }
+        .overlay(alignment: .trailing) { if divider { Theme.white.frame(width: 1) } }
     }
 }
 

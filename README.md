@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 6 of 9 done: companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), and the Devin feed with quick replies (6). Quiet mode and End of day are next, step 7. Build order is in SPEC.md section 9.
+Step 7 of 9 done: companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), the Devin feed with quick replies (6), and quiet mode with End of day (7). Scheduled tasks are next, step 8. Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -45,6 +45,11 @@ The app runs the local server, so `./cr` works whenever the app is open:
 - Tickets: `~/Library/Application Support/Control Room/tickets.json`
 - Settings and the server token: `config.local.json` in the same folder. Made on first run, never in the repo. `config.example.json` shows its shape.
 - The server listens on 127.0.0.1:47821 only and refuses anything without the token.
+
+## Quiet and End of day
+
+- **Quiet:** press QUIET in the panel's black header and pick 25, 50 or 90 minutes. The face sleeps whatever is waiting; the header shows QUIET UNTIL with +25, +50 and WAKE.
+- **End of day** opens by itself at 18:30 (or from END OF DAY on the board): what finished, what still wants you (Open or Tomorrow 9am), and what you keep putting off (Keep, Drop, or Hand off). Close the day puts everything still waiting to sleep until 9am, clears Done, and quiets the companion until 9.
 
 ## Hand off
 

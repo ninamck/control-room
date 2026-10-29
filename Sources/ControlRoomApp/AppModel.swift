@@ -17,7 +17,13 @@ final class AppModel: ObservableObject {
     /// Opens the board window. Set by the app at launch.
     var openBoard: () -> Void = {}
     /// Opens Hand off, optionally with a brief already written (from End of day). Set by the app at launch.
-    var openHandOff: (_ brief: String?) -> Void = { _ in }
+    var openHandOffWith: (_ brief: String?, _ replacing: String?) -> Void = { _, _ in }
+
+    /// Opens Hand off. From End of day it carries the put-off ticket's title, and that ticket is
+    /// removed once the hand-off starts, so the work isn't listed twice.
+    func openHandOff(_ brief: String?, replacing: String? = nil) {
+        openHandOffWith(brief, replacing)
+    }
 
     /// The Ready to delegate list from Notion, and why it's empty if something's wrong.
     @Published private(set) var ready: [NotionReady.Item] = []
@@ -53,8 +59,13 @@ final class AppModel: ObservableObject {
     private var server: HTTPServer?
     private var clock: Timer?
 
-    init(store: TicketStore) {
+    /// Remembered settings (quiet, End of day shown). Snapshots pass their own so they never touch Nina's.
+    let defaults: UserDefaults
+
+    init(store: TicketStore, defaults: UserDefaults = .standard) {
         self.store = store
+        self.defaults = defaults
+        quietUntil = defaults.object(forKey: "quietUntil") as? Date
         store.onChange = { [weak self] in
             DispatchQueue.main.async { self?.reload() }
         }
@@ -96,6 +107,7 @@ final class AppModel: ObservableObject {
     func reload() {
         now = Date()
         tickets = (try? store.all()) ?? tickets
+        openEndOfDayIfDue()
     }
 
     // MARK: What to show
@@ -127,11 +139,93 @@ final class AppModel: ObservableObject {
 
     /// The face as it would be with the panel closed: what's waiting, not whether it's being looked at.
     var restingFace: Face {
+        // Quiet: asleep whatever is waiting. No colour change, no animation (SPEC section 4).
+        if isQuiet { return .asleep }
         // Scheduled output never wakes the companion.
         let wakers = waiting.filter { $0.kind == .interactive }
         if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .overdue }
         if !wakers.isEmpty { return .needsYou }
         return .asleep
+    }
+
+    // MARK: Quiet
+
+    /// Until when the companion stays asleep. Kept across restarts.
+    @Published private(set) var quietUntil: Date?
+
+    var isQuiet: Bool { (quietUntil ?? .distantPast) > now }
+
+    func quiet(minutes: Int) {
+        setQuiet(until: Date().addingTimeInterval(TimeInterval(minutes * 60)))
+    }
+
+    /// +25 or +50 on the time already set.
+    func extendQuiet(minutes: Int) {
+        setQuiet(until: max(quietUntil ?? Date(), Date()).addingTimeInterval(TimeInterval(minutes * 60)))
+    }
+
+    func wake() { setQuiet(until: nil) }
+
+    func setQuiet(until date: Date?) {
+        quietUntil = date
+        defaults.set(date, forKey: "quietUntil")
+        now = Date()
+    }
+
+    // MARK: End of day
+
+    /// Opens End of day. Set by the app at launch.
+    var openEndOfDay: () -> Void = {}
+
+    var endOfDay: EndOfDay { EndOfDay(tickets: tickets, now: now) }
+
+    /// When End of day opens by itself today (18:30 unless changed in config.local.json).
+    private var endOfDayTime: Date? {
+        let setting = (try? Config.loadOrCreate())?.endOfDay ?? "18:30"
+        let parts = setting.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return Calendar.current.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: now)
+    }
+
+    /// Opens End of day once, at its time, on days there's something to look back on.
+    private func openEndOfDayIfDue() {
+        guard let due = endOfDayTime, now >= due else { return }
+        let today = Calendar.current.startOfDay(for: now)
+        if let last = defaults.object(forKey: "endOfDayShown") as? Date, last >= today { return }
+        defaults.set(now, forKey: "endOfDayShown")
+        let summary = endOfDay
+        guard !summary.done.isEmpty || !summary.waiting.isEmpty || !summary.putOff.isEmpty else { return }
+        openEndOfDay()
+    }
+
+    /// Close the day: anything still waiting goes quiet until 9, Done clears, and the companion sleeps until 9.
+    func closeTheDay() {
+        let nine = Rules.nextNineAM(after: Date())
+        _ = try? store.update { tickets, now in
+            for i in tickets.indices where tickets[i].state == .needsYou && !EndOfDay.isPutOff(tickets[i], now: now) {
+                try tickets[i].apply(.tomorrow, now: now)
+            }
+            tickets.removeAll { $0.state == .done }
+        }
+        setQuiet(until: nine)
+        reload()
+    }
+
+    /// Drop deletes the ticket, and unticks Agent in Notion if it came from Task Tracker (DECISIONS.md).
+    func drop(_ ticket: Ticket) {
+        _ = try? store.drop(ticket.id)
+        reload()
+        guard let page = ticket.notionPage, let token = (try? Config.loadOrCreate())?.notionToken else { return }
+        Task {
+            do { try await NotionReady.untickAgent(page: page, token: token) }
+            catch { readyProblem = error.localizedDescription }
+        }
+    }
+
+    /// Removes a ticket without touching Notion (a put-off ticket that's now been handed off).
+    func removeTicket(_ id: String) {
+        _ = try? store.drop(id)
+        reload()
     }
 
     // MARK: Hand off

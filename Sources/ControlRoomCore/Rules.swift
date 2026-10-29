@@ -7,6 +7,12 @@ public enum Rules {
     /// Later hides a ticket for this long.
     public static let laterFor: TimeInterval = 30 * 60
 
+    /// 09:00 tomorrow, or this morning if it's still before 9.
+    public static func nextNineAM(after now: Date, calendar: Calendar = .current) -> Date {
+        let today = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: now)!
+        return today > now ? today : calendar.date(byAdding: .day, value: 1, to: today)!
+    }
+
     /// Applies everything that happens with the passing of time:
     /// Later tickets come back, and done tickets expire at midnight.
     public static func tick(_ tickets: [Ticket], now: Date, calendar: Calendar = .current) -> [Ticket] {
@@ -32,6 +38,10 @@ public enum TicketAction: String, CaseIterable, Sendable {
     case stillRunning = "still-running"
     case needsYou = "needs-you"
     case blocked
+    /// End of day: quiet overnight, back at 09:00. Not counted as a Later.
+    case tomorrow
+    /// End of day: one more day before it's "put off" again.
+    case keep
 }
 
 public struct RuleError: Error, LocalizedError, Sendable {
@@ -51,6 +61,14 @@ extension Ticket {
             laterCount += 1
             state = .later
             stateSince = now
+        case .tomorrow:
+            guard state == .needsYou else { throw RuleError("Only a ticket waiting on you can wait until tomorrow.") }
+            waitingSince = stateSince
+            laterUntil = Rules.nextNineAM(after: now)
+            state = .later
+            stateSince = now
+        case .keep:
+            keptUntil = now.addingTimeInterval(24 * 3600)
         case .park: move(to: .parked, now: now)
         case .done: move(to: .done, now: now)
         case .stillRunning: move(to: .working, now: now)

@@ -21,3 +21,6 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Devin** is checked every 30 seconds with a personal access token (`cr set-devin-token`), only Nina's own sessions from the last day. Working → Working; waiting for her or her approval → Waiting on you; finished → Waiting on you until she marks it Done; errors and credit or limit stops → Blocked. A ticket only moves when Devin's status changes, so Done sticks.
 - **Quick reply labels**: YES (mint) and NOT YET for yes/no; numbered options for pick one. A failed send turns the ticket Blocked with the reason.
 - **Sleeping Devin sessions stay hidden.** When Devin suspends a session for inactivity, its ticket doesn't change and a new one isn't made. Only live sessions (working, waiting, finished, errored) show.
+- **End of day opens by itself at 18:30** (Nina's choice; the spec proposed 18:00), once a day, on days with something to look back on. Change it with "end_of_day" in config.local.json.
+- **Drop also unticks Agent in Notion** (changes SPEC section 5's read-only rule, at Nina's choice) when the ticket came from Task Tracker. Hand off from End of day removes the put-off ticket once the hand-off starts.
+- **Quiet mode** starts from QUIET in the panel header (25, 50 or 90 minutes) and survives a restart. Tomorrow 9am doesn't count as a Later.

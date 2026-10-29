@@ -121,6 +121,8 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var brief: String?
     /// For handed-off work picked from Notion: the Notion page it came from, so v2 can mark it done there.
     public var notionPage: String?
+    /// Kept at End of day: stays out of "Put off and never came back" until this time.
+    public var keptUntil: Date?
     /// For polled feeds (Devin): the tool's status last applied, so a ticket only moves when that changes
     /// and Nina's Done isn't undone by the next poll.
     public var feedStatus: String?

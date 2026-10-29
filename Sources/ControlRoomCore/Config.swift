@@ -11,6 +11,8 @@ public struct Config: Codable, Sendable {
     public var notionToken: String?
     /// Which Notion data source to read. Defaults to Task Tracker.
     public var notionDataSource: String?
+    /// When End of day opens by itself, "HH:mm". Nina chose 18:30.
+    public var endOfDay: String?
     /// Devin personal access token, and who it belongs to. Set with `cr set-devin-token`.
     public var devinToken: String?
     public var devinOrg: String?

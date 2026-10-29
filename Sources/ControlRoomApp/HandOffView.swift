@@ -141,6 +141,7 @@ struct HandOffView: View {
         if let problem = model.handOff(brief: form.brief, tool: form.tool, folder: folder, notionPage: form.notionPage) {
             form.problem = problem
         } else {
+            if let old = form.replaces { model.removeTicket(old) }
             form.reset()
             close()
         }
@@ -155,6 +156,8 @@ final class HandOffForm: ObservableObject {
     @Published var folder: String?
     @Published var notionPage: String?
     @Published var problem: String?
+    /// The End of day ticket this hand-off replaces, removed once it starts.
+    var replaces: String?
 
     func choose(_ tool: Tool, model: AppModel) {
         self.tool = tool
@@ -179,6 +182,7 @@ final class HandOffForm: ObservableObject {
     func reset() {
         brief = ""
         notionPage = nil
+        replaces = nil
         problem = nil
     }
 }
