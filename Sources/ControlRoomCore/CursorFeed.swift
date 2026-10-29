@@ -61,6 +61,15 @@ public enum CursorFeed {
             case "beforeSubmitPrompt":
                 let prompt = payload["prompt"] as? String ?? ""
                 guard known else {
+                    // Nina pasting a handed-off brief: this chat takes over the hand-off ticket.
+                    if let i = tickets.firstIndex(where: { HandOff.matchesBrief($0, prompt: prompt, now: now) }) {
+                        tickets[i].externalId = key
+                        tickets[i].source = .automatic
+                        tickets[i].chatName = chatName ?? tickets[i].chatName
+                        if let folder { tickets[i].deepLink = folder }
+                        doing(i, "Reading your message")
+                        return tickets[i]
+                    }
                     let asked = FeedText.title(from: prompt) ?? transcript?.lastQuestion().flatMap(FeedText.title(from:)) ?? fallbackTitle
                     let i = newTicket(title: asked)
                     doing(i, "Reading your message")

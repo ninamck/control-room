@@ -50,6 +50,7 @@ struct BoardView: View {
                 .padding(.trailing, 4)
             ShadowButton(title: adding ? "CLOSE" : "+ ADD") { adding.toggle() }
                 .accessibilityLabel(adding ? "Close add a ticket" : "Add a ticket")
+            ShadowButton(title: "HAND OFF", fill: Theme.yellow) { model.openHandOff(nil) }
         }
         .padding(.horizontal, 32)
         .frame(height: 56)
@@ -351,6 +352,7 @@ struct CompactRow: View {
 /// White button with a solid 3px ink shadow, like + ADD.
 struct ShadowButton: View {
     let title: String
+    var fill: Color = Theme.white
     let action: () -> Void
     @FocusState private var focused: Bool
 
@@ -360,7 +362,7 @@ struct ShadowButton: View {
                 .label(13, tracking: 0.04, weight: .bold)
                 .padding(.horizontal, 16)
                 .frame(height: 36)
-                .background(Theme.white)
+                .background(fill)
                 .overlay(Rectangle().strokeBorder(Theme.ink, lineWidth: focused ? 3 : 1))
                 .contentShape(Rectangle())
         }

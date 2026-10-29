@@ -20,6 +20,7 @@ Control Room
   cr remove-cursor-hooks           stop sending them
   cr install-claude-hooks          send Claude Code sessions to Control Room automatically
   cr remove-claude-hooks           stop sending them
+  cr set-notion-token              connect the Ready to delegate list to Notion
 
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
@@ -189,6 +190,15 @@ case "remove-claude-hooks":
         try ClaudeCodeHooks.remove()
         print("Removed. Claude Code sessions won't be sent to Control Room any more.")
     } catch { fail("Couldn't remove: \(error.localizedDescription)") }
+case "set-notion-token":
+    // Read without echo so the token never shows on screen or in shell history.
+    guard let raw = getpass("Paste your Notion token (it won't show as you paste), then press Return: ") else { fail("Nothing pasted.") }
+    let token = String(cString: raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard token.count > 20 else { fail("That doesn't look like a Notion token. It starts with ntn_ or secret_.") }
+    var updated = config
+    updated.notionToken = token
+    do { try updated.save() } catch { fail("Couldn't save it: \(error.localizedDescription)") }
+    print("Saved. Open Hand off and the Ready to delegate list will load from Notion.")
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)
 }

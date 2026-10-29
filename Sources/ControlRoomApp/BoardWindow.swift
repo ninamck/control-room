@@ -34,7 +34,7 @@ final class BoardWindow: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         model.boardOpen = false
-        NSApp.setActivationPolicy(.accessory)
+        WindowPolicy.update(closing: window)
     }
 
     func windowDidMiniaturize(_ notification: Notification) { model.boardOpen = false }

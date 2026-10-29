@@ -7,6 +7,17 @@ public struct Config: Codable, Sendable {
     public var port: Int
     /// Every call to the local server must carry this. Generated on first run.
     public var token: String
+    /// Notion internal integration token, for the Ready to delegate list. Set with `cr set-notion-token`.
+    public var notionToken: String?
+    /// Which Notion data source to read. Defaults to Task Tracker.
+    public var notionDataSource: String?
+
+    /// Saves changes, keeping the file private to Nina's account.
+    public func save() throws {
+        let data = try JSONEncoder.controlRoom.encode(self)
+        try data.write(to: Config.fileURL, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: Config.fileURL.path)
+    }
 
     /// ~/Library/Application Support/Control Room, or CONTROL_ROOM_HOME if set (used by tests).
     public static var directory: URL {

@@ -16,6 +16,14 @@ final class AppModel: ObservableObject {
     }
     /// Opens the board window. Set by the app at launch.
     var openBoard: () -> Void = {}
+    /// Opens Hand off, optionally with a brief already written (from End of day). Set by the app at launch.
+    var openHandOff: (_ brief: String?) -> Void = { _ in }
+
+    /// The Ready to delegate list from Notion, and why it's empty if something's wrong.
+    @Published private(set) var ready: [NotionReady.Item] = []
+    @Published private(set) var readyProblem: String?
+    @Published private(set) var readyLoading = false
+    let places = PlaceBook()
 
     /// While the panel or board is showing running agents, keep "3s ago" counting.
     /// Otherwise nothing ticks faster than every 20s.
@@ -117,6 +125,66 @@ final class AppModel: ObservableObject {
         return .asleep
     }
 
+    // MARK: Hand off
+
+    /// Folders to offer in Where, most recently used first.
+    var handOffPlaces: [String] { places.list(seenIn: tickets) }
+
+    func loadReady() {
+        guard let config = try? Config.loadOrCreate(), let token = config.notionToken, !token.isEmpty else {
+            ready = []
+            readyProblem = "Not connected to Notion yet. Run `cr set-notion-token` in Terminal to connect it."
+            return
+        }
+        readyLoading = true
+        Task {
+            do {
+                let items = try await NotionReady.fetch(token: token, dataSource: config.notionDataSource ?? NotionReady.taskTracker)
+                ready = items
+                readyProblem = nil
+            } catch {
+                readyProblem = error.localizedDescription
+            }
+            readyLoading = false
+        }
+    }
+
+    /// Go. Returns a message for Nina if it couldn't start, or nil once a Working ticket exists.
+    func handOff(brief: String, tool: Tool, folder: String?, notionPage: String?) -> String? {
+        let brief = brief.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !brief.isEmpty else { return "Write a brief first." }
+        switch tool {
+        case .claudeCode:
+            guard let folder else { return "Pick a project folder for Claude to work in." }
+            guard let claude = Launcher.claudeCode() else {
+                return "Claude Code isn't installed on this Mac yet. Run Anthropic's installer once in Terminal: curl -fsSL https://claude.ai/install.sh | bash"
+            }
+            let session = UUID().uuidString.lowercased()
+            do {
+                try Launcher.startClaudeCode(claude, brief: brief, folder: folder, sessionID: session)
+            } catch {
+                return "Couldn't open Terminal: \(error.localizedDescription)"
+            }
+            _ = try? store.add(HandOff.ticket(tool: .claudeCode, brief: brief, folder: folder, sessionID: session, notionPage: notionPage))
+        case .cursor:
+            guard let folder else { return "Pick the project to open in Cursor." }
+            Launcher.copy(brief)
+            openInCursor(folder: URL(fileURLWithPath: folder))
+            _ = try? store.add(HandOff.ticket(tool: .cursor, brief: brief, folder: folder, notionPage: notionPage))
+        case .grok:
+            Launcher.copy(brief)
+            NSWorkspace.shared.open(URL(string: "https://grok.com")!)
+            _ = try? store.add(HandOff.ticket(tool: .grok, brief: brief, folder: nil, notionPage: notionPage))
+        case .devin:
+            return "Devin arrives in step 6."
+        case .claudeAI:
+            return "Pick Claude, Cursor or Grok."
+        }
+        if let folder { places.record(folder, tool: tool) }
+        reload()
+        return nil
+    }
+
     // MARK: Actions
 
     func apply(_ action: TicketAction, to ticket: Ticket) {
@@ -167,7 +235,7 @@ final class AppModel: ObservableObject {
     static let cursorID = "com.todesktop.230313mzl4w4u92"
 
     /// Opening a folder that's already open in Cursor brings that window to the front.
-    private func openInCursor(folder: URL?) {
+    func openInCursor(folder: URL?) {
         guard let cursor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.cursorID) else { return }
         if let folder, FileManager.default.fileExists(atPath: folder.path) {
             NSWorkspace.shared.open([folder], withApplicationAt: cursor, configuration: NSWorkspace.OpenConfiguration())

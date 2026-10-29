@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: AppModel?
     private var companion: Companion?
     private var board: BoardWindow?
+    private var handOff: HandOffWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
@@ -23,14 +24,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.startServer(config: config)
             let companion = Companion(model: model)
             let board = BoardWindow(model: model)
+            let handOff = HandOffWindow(model: model)
             model.openBoard = { [weak companion, weak board] in
                 companion?.collapse()
                 board?.show()
+            }
+            model.openHandOff = { [weak companion, weak handOff] brief in
+                companion?.collapse()
+                handOff?.show(brief: brief)
             }
             companion.start()
             self.model = model
             self.companion = companion
             self.board = board
+            self.handOff = handOff
         } catch {
             let alert = NSAlert()
             alert.messageText = "Control Room couldn't start"

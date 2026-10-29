@@ -41,6 +41,9 @@ struct QuickAddField: View {
                     CellButton(title: "OPEN BOARD", strong: true, width: 120, divider: false) { model.openBoard() }
                         .frame(height: 44)
                         .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
+                    CellButton(title: "+ HAND OFF", fill: Theme.yellow, strong: true, width: 110, divider: false) { model.openHandOff(nil) }
+                        .frame(height: 44)
+                        .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
                 }
             }
             if !text.trimmingCharacters(in: .whitespaces).isEmpty && parsed.tool == nil {

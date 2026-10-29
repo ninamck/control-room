@@ -14,3 +14,7 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Panel animation.** The panel grows out of the notch and shrinks back into it. Instant when Reduce Motion is on.
 - **Manual tickets** start as waiting on you. Still running moves them to Working. (To revisit once Nina has used it.)
 - **When a Claude Code session stops.** Same as Cursor: a finished reply waits on Nina until she marks it Done.
+- **Hand off to Claude starts Claude Code in Terminal** in the chosen project, with the brief as its first message. Needs Anthropic's Claude Code installer run once; the desktop app's own copy can't be started from outside. The session id is set up front so its ticket is the hand-off ticket.
+- **Hand off to Cursor** copies the brief and opens the project. When Nina pastes and sends it, the Cursor feed takes over that same ticket.
+- **Ready to delegate** is Brain → Task Tracker, tasks with a new Agent checkbox ticked and Status not Done or Cancelled. Read-only; the Notion token lives in config.local.json, set with `cr set-notion-token`.
+- **Hand off remembers a default tool per project**: choosing a project switches to the tool last handed off there.

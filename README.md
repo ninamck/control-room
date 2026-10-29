@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 4 of 9 done: the notch companion, panel and quick-add (2), Cursor's agents and Claude Code sessions feeding in automatically (3), and the board window (4). Hand off and the Notion list are next, step 5. Build order is in SPEC.md section 9.
+Step 5 of 9 done: the notch companion, panel and quick-add (2), Cursor and Claude Code feeding in automatically (3), the board (4), and Hand off with the Notion Ready to delegate list (5). The Devin feed and quick replies are next, step 6. Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -45,6 +45,19 @@ The app runs the local server, so `./cr` works whenever the app is open:
 - Tickets: `~/Library/Application Support/Control Room/tickets.json`
 - Settings and the server token: `config.local.json` in the same folder. Made on first run, never in the repo. `config.example.json` shows its shape.
 - The server listens on 127.0.0.1:47821 only and refuses anything without the token.
+
+## Hand off
+
+Press **+ HAND OFF** in the panel's footer or **HAND OFF** on the board. Write a brief, pick a tool and a project, press Go (or Enter):
+
+- **Claude** opens Terminal in the project and starts Claude Code with the brief. Needs Claude Code installed once: `curl -fsSL https://claude.ai/install.sh | bash`.
+- **Cursor** copies the brief and opens the project in Cursor. Paste and send; the ticket follows that chat.
+- **Grok** copies the brief and opens grok.com.
+- **Devin** comes with step 6.
+
+Each becomes a Working ticket. Choosing a project switches to the tool you last used there.
+
+**Ready to delegate** lists Task Tracker tasks with the Agent box ticked (not Done or Cancelled). Click one to fill the brief. To connect it: make a Notion integration at notion.so/profile/integrations, run `./cr set-notion-token` and paste its token, then in Task Tracker choose ••• → Connections and add it. Read-only.
 
 ## Cursor's agents
 

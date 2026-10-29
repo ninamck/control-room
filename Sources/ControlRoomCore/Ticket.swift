@@ -117,6 +117,10 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var chatName: String?
     /// The app the session runs in, as a bundle id (Claude desktop, Cursor, Terminal), so Open can go there.
     public var hostApp: String?
+    /// For handed-off work: the full brief Nina wrote.
+    public var brief: String?
+    /// For handed-off work picked from Notion: the Notion page it came from, so v2 can mark it done there.
+    public var notionPage: String?
     /// For automatic tickets while working: what the agent is doing right now, like "Running npm test".
     public var activity: String?
     /// When that activity was last reported.

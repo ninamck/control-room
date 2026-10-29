@@ -37,6 +37,11 @@ enum Snapshot {
         model.panelOpen = false
         save(BoardView(model: model, scrolls: false).frame(width: 1280, height: 800), to: folder.appendingPathComponent("board.png"))
 
+        let form = HandOffForm()
+        form.brief = "Draft the corrective actions table for the Checklists PRD: one row per failed check type, who gets alerted, what the GM has to do, and when it escalates. Use the audits section as the source."
+        form.folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Claude-code/control-room").path
+        save(HandOffView(model: model, form: form, close: {}).frame(width: 1280, height: 800), to: folder.appendingPathComponent("handoff.png"))
+
         let faces = HStack(spacing: 20) {
             ForEach(Face.allCases, id: \.self) { face in
                 VStack(spacing: 8) {
