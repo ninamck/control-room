@@ -106,7 +106,10 @@ final class AppModel: ObservableObject {
 
     func reload() {
         now = Date()
+        // Scheduled runs whose time has come land as cards first.
+        try? watchList.land(into: store, now: now)
         tickets = (try? store.all()) ?? tickets
+        watched = watchList.tasks
         openEndOfDayIfDue()
     }
 
@@ -146,6 +149,50 @@ final class AppModel: ObservableObject {
         if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .overdue }
         if !wakers.isEmpty { return .needsYou }
         return .asleep
+    }
+
+    // MARK: Scheduled
+
+    let watchList = WatchList()
+    /// The watch list as last read, for the views.
+    @Published private(set) var watched: [WatchedTask] = []
+    /// Opens the reader pane for a scheduled result. Set by the app at launch.
+    var openReader: (Ticket) -> Void = { _ in }
+
+    /// Landed scheduled results waiting to be read, oldest first.
+    var landed: [Ticket] { waiting.filter { $0.kind == .scheduled } }
+    /// Waiting on Nina, without scheduled results (which get their own block on the board).
+    var decisions: [Ticket] { waiting.filter { $0.kind == .interactive } }
+
+    /// The next scheduled run, for the morning board.
+    var nextScheduled: (task: WatchedTask, at: Date)? {
+        watched.compactMap { task in task.nextRun(after: now).map { (task, $0) } }.min { $0.1 < $1.1 }
+    }
+
+    func watch(_ task: WatchedTask) {
+        watchList.add(task)
+        reload()
+    }
+
+    func stopWatching(_ id: String) {
+        watchList.remove(id)
+        reload()
+    }
+
+    /// Read it: the result is Done and the watch list notes the run was fine.
+    func markRead(_ ticket: Ticket) {
+        try? watchList.markRead(ticket, store: store)
+        reload()
+    }
+
+    func markMissed(_ ticket: Ticket) {
+        try? watchList.markMissed(ticket, store: store)
+        reload()
+    }
+
+    /// Read: the full text in the reader pane when there is some, otherwise wherever the results live.
+    func read(_ ticket: Ticket) {
+        if ticket.lastMessage.isEmpty { open(ticket) } else { openReader(ticket) }
     }
 
     // MARK: Quiet

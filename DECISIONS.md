@@ -24,3 +24,5 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **End of day opens by itself at 18:30** (Nina's choice; the spec proposed 18:00), once a day, on days with something to look back on. Change it with "end_of_day" in config.local.json.
 - **Drop also unticks Agent in Notion** (changes SPEC section 5's read-only rule, at Nina's choice) when the ticket came from Task Tracker. Hand off from End of day removes the put-off ticket once the hand-off starts.
 - **Quiet mode** starts from QUIET in the panel header (25, 50 or 90 minutes) and survives a restart. Tomorrow 9am doesn't count as a Later.
+- **Scheduled tasks are watched by hand** (v1, as the spec planned): Nina adds each one to the watch list on the board (name, Claude or Grok, time, how often, optional link). At its time a result lands as a card she reads or marks Didn't run. It counts as waiting but never wakes the companion.
+- **Unread scheduled results expire when the next run of the same schedule lands**; the watch list shows "unread · Thu".

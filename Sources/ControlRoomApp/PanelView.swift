@@ -183,10 +183,11 @@ struct TicketRow: View {
 
     var body: some View {
         let wait = Wait(since: ticket.stateSince, now: model.now)
+        let ran = ticket.kind == .scheduled ? ticket.schedule.map { PanelView.clock.string(from: $0.expected) } : nil
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                Text("\(wait.number)").font(Theme.font(22, .black))
-                Text(wait.unit).label(9)
+                Text(ran ?? "\(wait.number)").font(Theme.font(ran == nil ? 22 : 17, .black))
+                Text(ran == nil ? wait.unit : "RAN").label(9)
             }
             .frame(width: 64)
             .frame(maxHeight: .infinity)
@@ -198,7 +199,10 @@ struct TicketRow: View {
             VStack(spacing: 0) {
                 details.padding(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
                 HStack(spacing: 0) {
-                    if let replies = model.quickReplies(for: ticket) {
+                    if ticket.kind == .scheduled {
+                        CellButton(title: ticket.lastMessage.isEmpty ? "READ IT" : "✓ DONE", fill: Theme.mint, strong: true) { model.markRead(ticket) }
+                        if !ticket.lastMessage.isEmpty { CellButton(title: "READ") { model.read(ticket) } }
+                    } else if let replies = model.quickReplies(for: ticket) {
                         // Answer from here (reference/05-quick-reply). The affirmative is mint; Open stays as the fallback.
                         ForEach(replies.indices, id: \.self) { n in
                             let reply = replies[n]

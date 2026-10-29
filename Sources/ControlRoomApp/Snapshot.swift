@@ -41,7 +41,15 @@ enum Snapshot {
              to: folder.appendingPathComponent("panel.png"))
 
         model.panelOpen = false
-        save(BoardView(model: model, scrolls: false).frame(width: 1280, height: 800), to: folder.appendingPathComponent("board.png"))
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        let longAgo = now.addingTimeInterval(-40 * 24 * 3600)
+        model.watch(WatchedTask(name: "QSR news scan", tool: .grok, time: f.string(from: ago(90)), cadence: .init(kind: .daily),
+                                link: "https://grok.com", created: longAgo))
+        model.watch(WatchedTask(name: "Morning brief", tool: .claudeAI, time: f.string(from: now.addingTimeInterval(8 * 60)), cadence: .init(kind: .daily), created: longAgo))
+        model.watch(WatchedTask(name: "All-hands numbers pull", tool: .claudeAI, time: "08:00", cadence: .init(kind: .weekly, weekday: 2), created: now))
+        save(BoardView(model: model, scrolls: false).frame(width: 1280, height: 2300), to: folder.appendingPathComponent("board.png"))
 
         let form = HandOffForm()
         form.brief = "Draft the corrective actions table for the Checklists PRD: one row per failed check type, who gets alerted, what the GM has to do, and when it escalates. Use the audits section as the source."

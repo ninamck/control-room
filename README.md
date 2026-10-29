@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 7 of 9 done: companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), the Devin feed with quick replies (6), and quiet mode with End of day (7). Scheduled tasks are next, step 8. Build order is in SPEC.md section 9.
+Step 8 of 9 done: companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), Devin and quick replies (6), quiet mode and End of day (7), and the scheduled watch list with the reader pane (8). The calendar line is last, step 9. Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -45,6 +45,10 @@ The app runs the local server, so `./cr` works whenever the app is open:
 - Tickets: `~/Library/Application Support/Control Room/tickets.json`
 - Settings and the server token: `config.local.json` in the same folder. Made on first run, never in the repo. `config.example.json` shows its shape.
 - The server listens on 127.0.0.1:47821 only and refuses anything without the token.
+
+## Scheduled tasks
+
+On the board, under ON A SCHEDULE, choose "+ watch one" and add each scheduled task you run in Claude or Grok: name, tool, time, how often, and optionally the link where its results show up. At that time its result lands under "Landed while you were away" with Open, Read it, and Didn't run. It counts in your pink number but never wakes the face. An unread result goes when the next run lands. Before 09:30 the board shows the next scheduled run in place of Done. Results with text open in the reader pane.
 
 ## Quiet and End of day
 

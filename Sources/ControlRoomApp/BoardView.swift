@@ -84,6 +84,10 @@ struct BoardView: View {
                 }
                 .frame(height: unit * 2)
                 .bottomRule()
+                if let next = morningNext {
+                    NextScheduledBlock(task: next.task, at: next.at)
+                        .frame(height: unit * 2)
+                } else {
                 BigBlock(label: "DONE TODAY", number: model.doneCount, numeral: 96, colour: Theme.mint) {
                     if model.doneCount > 0 {
                         Button { showDone.toggle() } label: {
@@ -94,16 +98,27 @@ struct BoardView: View {
                     }
                 }
                 .frame(height: unit * 2)
+                }
             }
         }
+    }
+
+    /// Before 09:30, the next scheduled run takes Done's place (SPEC section 6).
+    private var morningNext: (task: WatchedTask, at: Date)? {
+        let cal = Calendar.current
+        let minutes = cal.component(.hour, from: model.now) * 60 + cal.component(.minute, from: model.now)
+        guard minutes < 9 * 60 + 30 else { return nil }
+        return model.nextScheduled
     }
 
     // MARK: Main
 
     private var main: some View {
         VStack(alignment: .leading, spacing: 28) {
+            if !model.landed.isEmpty { landed }
             decisions
             if !model.working.isEmpty { working }
+            WatchSection(model: model)
             if showDone { done }
         }
         .padding(.horizontal, 32).padding(.vertical, 28)
@@ -111,16 +126,26 @@ struct BoardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var landed: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("LANDED WHILE YOU WERE AWAY").label(12, tracking: 0.12)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(model.landed) { ticket in
+                LandedCard(ticket: ticket, model: model)
+            }
+        }
+    }
+
     private var decisions: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("NEEDS A DECISION").label(12, tracking: 0.12)
                 .accessibilityAddTraits(.isHeader)
-            if model.waiting.isEmpty {
+            if model.decisions.isEmpty {
                 Text("Nothing needs you right now.")
                     .font(Theme.font(13.5, .regular))
                     .foregroundStyle(Theme.bodyGrey)
             }
-            ForEach(model.waiting) { ticket in
+            ForEach(model.decisions) { ticket in
                 DecisionCard(ticket: ticket, model: model)
             }
         }
@@ -157,6 +182,30 @@ struct BoardView: View {
                 }
             }
         }
+    }
+}
+
+/// NEXT SCHEDULED, on paper: the time big, then the name and tool.
+struct NextScheduledBlock: View {
+    let task: WatchedTask
+    let at: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("NEXT SCHEDULED").label(12, tracking: 0.12)
+            Spacer(minLength: 0)
+            Text(PanelView.clock.string(from: at))
+                .font(Theme.font(96, .black)).tracking(-3.8)
+                .lineLimit(1).minimumScaleFactor(0.5)
+            HStack(spacing: 8) {
+                Text(task.name).font(Theme.font(15, .bold))
+                Text(task.tool.displayName).font(Theme.font(13, .regular)).foregroundStyle(Theme.bodyGrey)
+            }
+        }
+        .padding(.horizontal, 24).padding(.vertical, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(Theme.paper)
+        .accessibilityElement(children: .combine)
     }
 }
 

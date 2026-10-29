@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var board: BoardWindow?
     private var handOff: HandOffWindow?
     private var endOfDay: EndOfDayWindow?
+    private var reader: ReaderWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
@@ -30,6 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 board?.show()
             }
             let endOfDay = EndOfDayWindow(model: model)
+            let reader = ReaderWindow(model: model)
+            model.openReader = { [weak reader] ticket in reader?.show(ticket) }
             model.openHandOffWith = { [weak companion, weak handOff] brief, replacing in
                 companion?.collapse()
                 handOff?.show(brief: brief, replacing: replacing)
@@ -46,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.board = board
             self.handOff = handOff
             self.endOfDay = endOfDay
+            self.reader = reader
         } catch {
             let alert = NSAlert()
             alert.messageText = "Control Room couldn't start"
