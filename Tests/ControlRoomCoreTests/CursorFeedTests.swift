@@ -149,6 +149,14 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(CursorFeed.title(from: inline) == "will this default to open the predictive orders always?")
 }
 
+@Test func cursorsOwnFollowUpsArentTitles() throws {
+    #expect(CursorFeed.title(from: "Briefly inform the user about the task result and perform any follow-up actions (if needed).") == nil)
+    let store = try makeStore()
+    try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Does this go across to the variances?"]), store: store)
+    let t = try CursorFeed.handle(event("beforeSubmitPrompt", ["prompt": "Briefly inform the user about the task result and perform any follow-up actions (if needed)."]), store: store)
+    #expect(t?.title == "Does this go across to the variances?")
+}
+
 @Test func finishingRefreshesTheTitleFromTheTranscript() throws {
     let transcript = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jsonl")
     try #"{"role":"user","message":{"content":[{"type":"text","text":"<user_query>Newest question</user_query>"}]}}"#

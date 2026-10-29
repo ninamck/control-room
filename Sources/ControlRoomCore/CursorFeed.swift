@@ -141,12 +141,17 @@ public enum CursorFeed {
 
     static let fallbackTitle = "Cursor agent"
 
+    /// Messages Cursor sends on its own, in the same form as Nina's, e.g. when a background task finishes.
+    static let automaticFollowUps = ["Briefly inform the user about the task result"]
+
     /// Lines Cursor adds when Nina points at something on a page. Not her words.
     static let pastedElementPrefixes = ["DOM Path:", "Position:", "HTML Element:", "React Component:"]
 
     /// A row-length title from what Nina asked, or nil if the message has none of her own words.
     /// A bare link becomes its readable last part.
     static func title(from prompt: String) -> String? {
+        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        if automaticFollowUps.contains(where: trimmed.hasPrefix) { return nil }
         let line = prompt.split(whereSeparator: \.isNewline)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .lazy
