@@ -21,6 +21,7 @@ Control Room
   cr install-claude-hooks          send Claude Code sessions to Control Room automatically
   cr remove-claude-hooks           stop sending them
   cr set-notion-token              connect the Ready to delegate list to Notion
+  cr set-devin-token               connect your Devin sessions
 
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
@@ -202,6 +203,31 @@ case "set-notion-token":
     updated.notionToken = token
     do { try updated.save() } catch { fail("Couldn't save it: \(error.localizedDescription)") }
     print("Saved. Open Hand off and the Ready to delegate list will load from Notion.")
+case "set-devin-token":
+    guard let raw = getpass("Paste your Devin personal access token (it won't show as you paste), then press Return: ") else { fail("Nothing pasted.") }
+    var token = String(cString: raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    let half = token.count / 2
+    if token.count % 2 == 0, token.prefix(half) == token.suffix(half) { token = String(token.prefix(half)) }
+    guard token.hasPrefix("cog_") else { fail("That doesn't look like a Devin token. Personal access tokens start with cog_.") }
+    // Ask Devin who this is, so only your own sessions are tracked.
+    var result: Result<DevinAPI.Me, Error>?
+    let asked = DispatchSemaphore(value: 0)
+    Task {
+        do { result = .success(try await DevinAPI(token: token).me()) } catch { result = .failure(error) }
+        asked.signal()
+    }
+    asked.wait()
+    switch result {
+    case .success(let me)?:
+        var updated = config
+        updated.devinToken = token
+        updated.devinOrg = me.orgID
+        updated.devinUser = me.userID
+        do { try updated.save() } catch { fail("Couldn't save it: \(error.localizedDescription)") }
+        print("Connected to Devin as \(me.userName). Your Devin sessions will show up within 30 seconds.")
+    case .failure(let error)?: fail(error.localizedDescription)
+    case nil: fail("Couldn't check the token with Devin.")
+    }
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)
 }

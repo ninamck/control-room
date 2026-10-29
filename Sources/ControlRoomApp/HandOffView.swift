@@ -106,7 +106,7 @@ struct HandOffView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Where").font(Theme.font(12, .bold))
                     WherePicker(model: model, form: form)
-                    Text(form.tool == .grok ? "Grok starts a new chat." : "Last used first.")
+                    Text(form.tool == .grok ? "Grok starts a new chat." : form.tool == .devin ? "Devin picks the repo from your brief." : "Last used first.")
                         .font(Theme.font(12, .regular)).foregroundStyle(Theme.bodyGrey)
                 }
                 .frame(maxWidth: .infinity)
@@ -137,7 +137,7 @@ struct HandOffView: View {
     }
 
     private func go() {
-        let folder = form.tool == .grok ? nil : form.folder
+        let folder = (form.tool == .grok || form.tool == .devin) ? nil : form.folder
         if let problem = model.handOff(brief: form.brief, tool: form.tool, folder: folder, notionPage: form.notionPage) {
             form.problem = problem
         } else {
@@ -221,8 +221,8 @@ struct WherePicker: View {
 
     var body: some View {
         Menu {
-            if form.tool == .grok {
-                Button("New chat") {}
+            if form.tool == .grok || form.tool == .devin {
+                Button(form.tool == .devin ? "New session" : "New chat") {}
             } else {
                 ForEach(model.handOffPlaces, id: \.self) { path in
                     Button(Self.label(path)) { form.pick(path, model: model) }
@@ -232,7 +232,7 @@ struct WherePicker: View {
             }
         } label: {
             HStack {
-                Text(form.tool == .grok ? "New chat" : form.folder.map(Self.label) ?? "Choose a project folder")
+                Text(form.tool == .grok ? "New chat" : form.tool == .devin ? "New Devin session" : form.folder.map(Self.label) ?? "Choose a project folder")
                     .font(Theme.font(14, .medium))
                     .lineLimit(1)
                 Spacer()
@@ -247,7 +247,6 @@ struct WherePicker: View {
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        .disabled(form.tool == .devin)
         .accessibilityLabel("Where")
     }
 

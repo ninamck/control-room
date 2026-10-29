@@ -13,7 +13,7 @@ struct PanelView: View {
         VStack(spacing: 0) {
             header
             VStack(spacing: 0) {
-                if let problem = model.serverProblem {
+                if let problem = model.serverProblem ?? model.devinProblem {
                     Text(problem)
                         .font(Theme.font(12.5, .regular))
                         .foregroundStyle(Theme.ink)
@@ -132,6 +132,15 @@ struct TicketRow: View {
             VStack(spacing: 0) {
                 details.padding(EdgeInsets(top: 12, leading: 16, bottom: 10, trailing: 16))
                 HStack(spacing: 0) {
+                    if let replies = model.quickReplies(for: ticket) {
+                        // Answer from here (reference/05-quick-reply). The affirmative is mint; Open stays as the fallback.
+                        ForEach(replies.indices, id: \.self) { n in
+                            let reply = replies[n]
+                            CellButton(title: reply.label, fill: reply.affirmative ? Theme.mint : Theme.white, strong: reply.affirmative) {
+                                model.quickReply(ticket, reply.answer)
+                            }
+                        }
+                    } else {
                     // Done is always Nina's call. Manual tickets can also go back to running;
                     // agent tickets go back on their own when she prompts again, so they get Later instead.
                     CellButton(title: "✓ DONE", fill: Theme.mint, strong: true) { model.apply(.done, to: ticket) }
@@ -139,6 +148,7 @@ struct TicketRow: View {
                         CellButton(title: "STILL RUNNING") { model.apply(.stillRunning, to: ticket) }
                     } else if ticket.state == .needsYou {
                         CellButton(title: "LATER") { model.apply(.later, to: ticket) }
+                    }
                     }
                     CellButton(title: "OPEN", strong: true, width: 90, divider: false) { model.open(ticket) }
                 }
@@ -191,6 +201,10 @@ struct TicketRow: View {
         var parts = [ticket.tool.displayName]
         parts.append(ticket.contextName.isEmpty ? (ticket.source == .manual ? "added by you" : "") : ticket.contextName)
         if ticket.state == .blocked { parts.append("blocked") }
+        // "· yes or no" / "· pick one", as in reference/05-quiet-and-quick-reply.html.
+        if model.quickReplies(for: ticket) != nil {
+            if case .choice = ticket.questionType { parts.append("pick one") } else { parts.append("yes or no") }
+        }
         return parts.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 }

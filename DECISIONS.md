@@ -3,7 +3,7 @@
 Product calls Nina has made beyond SPEC.md. Newest last.
 
 - **Notch on other screens.** The companion sits in the notch on the MacBook screen. When the lid is closed or the notch isn't usable, it moves to the menu bar automatically (approved fallback, SPEC section 6).
-- **Quick replies to Claude Code.** Only for sessions started through Hand off. Sessions open in a terminal get Open only, so the terminal never falls out of sync.
+- **Quick replies to Claude Code.** Only for sessions started through Hand off, and only when it's waiting at its ordinary prompt (not a permission prompt or pick-list). The answer is typed into that session's own Terminal window, so the window never falls out of sync. Other sessions get Open only.
 - **Notch companion while on an external screen.** The face stays in the notch and also appears in the menu bar of the screen in use.
 - **Keyboard shortcut.** Control-Option-C opens and closes the panel.
 - **Cursor is automatic, not manual** (changes SPEC section 5). Cursor's documented agent hooks report prompts, replies, questions and stops, so each Cursor agent chat becomes its own ticket. Open focuses the project's Cursor window; Cursor has no link to a single chat. Quick replies stay off for Cursor.
@@ -18,3 +18,5 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Hand off to Cursor** copies the brief and opens the project. When Nina pastes and sends it, the Cursor feed takes over that same ticket.
 - **Ready to delegate** is Brain → Task Tracker, tasks with a new Agent checkbox ticked and Status not Done or Cancelled. Read-only; the Notion token lives in config.local.json, set with `cr set-notion-token`.
 - **Hand off remembers a default tool per project**: choosing a project switches to the tool last handed off there.
+- **Devin** is checked every 30 seconds with a personal access token (`cr set-devin-token`), only Nina's own sessions from the last day. Working → Working; waiting for her or her approval → Waiting on you; finished → Waiting on you until she marks it Done; errors and credit or limit stops → Blocked. A ticket only moves when Devin's status changes, so Done sticks.
+- **Quick reply labels**: YES (mint) and NOT YET for yes/no; numbered options for pick one. A failed send turns the ticket Blocked with the reason.

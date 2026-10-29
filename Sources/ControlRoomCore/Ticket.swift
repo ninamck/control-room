@@ -121,6 +121,12 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var brief: String?
     /// For handed-off work picked from Notion: the Notion page it came from, so v2 can mark it done there.
     public var notionPage: String?
+    /// For polled feeds (Devin): the tool's status last applied, so a ticket only moves when that changes
+    /// and Nina's Done isn't undone by the next poll.
+    public var feedStatus: String?
+    /// True when the agent is waiting at an ordinary reply (not a permission prompt or a pick-list widget),
+    /// so a typed quick reply lands as her next message.
+    public var quickReplyReady: Bool?
     /// For automatic tickets while working: what the agent is doing right now, like "Running npm test".
     public var activity: String?
     /// When that activity was last reported.
@@ -163,6 +169,12 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
 
     /// What to call where this lives: the chat's name if known, otherwise the project.
     public var contextName: String { chatName ?? thread }
+
+    /// The Claude Code session id, for tickets fed by Claude Code's hooks.
+    public var claudeSessionID: String? {
+        guard let id = externalId, id.hasPrefix("claude-code:") else { return nil }
+        return String(id.dropFirst("claude-code:".count))
+    }
 
     /// Short id for typing at the command line.
     public var shortID: String { String(id.prefix(6)) }

@@ -23,6 +23,8 @@ enum Launcher {
         #!/bin/zsh -l
         # Started by Control Room's Hand off.
         cd \(quoted(folder)) || exit 1
+        # Which Terminal window this is, so a quick reply from the panel types into this one only.
+        tty > \(quoted(dir.appendingPathComponent("\(sessionID).tty").path))
         clear
         \(quoted(claude)) --session-id \(sessionID) "$(cat \(quoted(briefFile.path)))"
 
@@ -35,6 +37,43 @@ enum Launcher {
             throw RuleError("Terminal isn't on this Mac.")
         }
         NSWorkspace.shared.open([command], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// The Terminal device of a session Hand off started, if it's still recorded.
+    static func handOffTerminal(for session: String) -> String? {
+        let file = Config.directory.appendingPathComponent("handoff/\(session).tty")
+        guard let tty = try? String(contentsOf: file, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines),
+              tty.hasPrefix("/dev/") else { return nil }
+        return tty
+    }
+
+    /// Types an answer into the Terminal window running that Claude Code session, then Return.
+    /// The first time, macOS asks Nina to let Control Room control Terminal.
+    static func type(_ answer: String, intoClaudeSession session: String) throws {
+        guard let tty = handOffTerminal(for: session) else { throw RuleError("Control Room doesn't know that session's Terminal window.") }
+        let text = answer.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        let source = """
+        tell application "Terminal"
+            repeat with w in windows
+                repeat with t in tabs of w
+                    if tty of t is "\(tty)" then
+                        do script "\(text)" in t
+                        return "sent"
+                    end if
+                end repeat
+            end repeat
+        end tell
+        return "closed"
+        """
+        var error: NSDictionary?
+        let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
+        if let error {
+            if (error[NSAppleScript.errorNumber] as? Int) == -1743 {
+                throw RuleError("Control Room isn't allowed to control Terminal. Allow it in System Settings → Privacy & Security → Automation.")
+            }
+            throw RuleError(error[NSAppleScript.errorMessage] as? String ?? "Terminal didn't take the reply.")
+        }
+        guard result?.stringValue == "sent" else { throw RuleError("That session's Terminal window has been closed.") }
     }
 
     static func copy(_ text: String) {

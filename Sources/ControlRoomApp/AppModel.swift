@@ -24,6 +24,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var readyProblem: String?
     @Published private(set) var readyLoading = false
     let places = PlaceBook()
+    /// Set when Devin can't be reached or refuses the token, shown at the top of the panel.
+    @Published private(set) var devinProblem: String?
+    private var devinTimer: Timer?
+    private var devinPolling = false
 
     /// While the panel or board is showing running agents, keep "3s ago" counting.
     /// Otherwise nothing ticks faster than every 20s.
@@ -75,6 +79,11 @@ final class AppModel: ObservableObject {
         EventQueue.drain(into: store)
         reload()
         // Minutes tick over, Later tickets come back, done expires at midnight, and any stray queued events land.
+        // Devin has no hooks, so ask it every 30 seconds: quick enough to notice, gentle on its API.
+        pollDevin()
+        devinTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.pollDevin() }
+        }
         clock = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
@@ -176,13 +185,136 @@ final class AppModel: ObservableObject {
             NSWorkspace.shared.open(URL(string: "https://grok.com")!)
             _ = try? store.add(HandOff.ticket(tool: .grok, brief: brief, folder: nil, notionPage: notionPage))
         case .devin:
-            return "Devin arrives in step 6."
+            guard let devin = devinAccount else { return "Not connected to Devin yet. Run `cr set-devin-token` in Terminal to connect it." }
+            let store = self.store
+            Task {
+                do {
+                    let session = try await DevinAPI(token: devin.token).create(prompt: brief, org: devin.org)
+                    var ticket = HandOff.ticket(tool: .devin, brief: brief, folder: nil, notionPage: notionPage)
+                    ticket.source = .automatic
+                    ticket.externalId = "devin:\(session.id)"
+                    ticket.deepLink = session.url
+                    ticket.activity = "Starting up"
+                    ticket.activityAt = Date()
+                    _ = try? store.add(ticket)
+                } catch {
+                    devinProblem = "Devin didn't start the hand-off: \(error.localizedDescription)"
+                }
+                reload()
+            }
+            return nil
         case .claudeAI:
             return "Pick Claude, Cursor or Grok."
         }
         if let folder { places.record(folder, tool: tool) }
         reload()
         return nil
+    }
+
+    // MARK: Devin
+
+    private var devinAccount: (token: String, org: String, user: String)? {
+        guard let config = try? Config.loadOrCreate(), let token = config.devinToken,
+              let org = config.devinOrg, let user = config.devinUser else { return nil }
+        return (token, org, user)
+    }
+
+    func pollDevin() {
+        guard let devin = devinAccount, !devinPolling else { return }
+        devinPolling = true
+        let store = self.store
+        let current = tickets
+        Task {
+            do {
+                let api = DevinAPI(token: devin.token)
+                let sessions = try await api.sessions(org: devin.org, user: devin.user)
+                var messages: [String: (devin: String?, nina: String?)] = [:]
+                for session in DevinFeed.needsMessages(sessions, in: current, now: Date()).prefix(10) {
+                    messages[session.id] = try? await api.lastMessages(org: devin.org, session: session.id)
+                }
+                try DevinFeed.apply(sessions, messages: messages, store: store)
+                devinProblem = nil
+            } catch {
+                devinProblem = error.localizedDescription
+            }
+            devinPolling = false
+        }
+    }
+
+    // MARK: Quick replies
+
+    struct Reply {
+        let label: String
+        let answer: String
+        let affirmative: Bool
+    }
+
+    /// The answer buttons for a ticket, or nil if it should only offer Open (SPEC section 6, Quick replies):
+    /// the tool takes messages, the agent is waiting at an ordinary reply, and it asked yes/no or pick one.
+    /// Claude Code only when it was started by Hand off, so the answer can be typed into its own Terminal window.
+    func quickReplies(for ticket: Ticket) -> [Reply]? {
+        guard ticket.state == .needsYou, ticket.quickReplyReady == true else { return nil }
+        switch ticket.tool {
+        case .devin: guard devinAccount != nil else { return nil }
+        case .claudeCode: guard let session = ticket.claudeSessionID, Launcher.handOffTerminal(for: session) != nil else { return nil }
+        default: return nil
+        }
+        switch ticket.questionType {
+        case .yesNo:
+            return [Reply(label: "YES", answer: "Yes", affirmative: true), Reply(label: "NOT YET", answer: "No, not yet", affirmative: false)]
+        case .choice(let options) where (2...4).contains(options.count):
+            return options.enumerated().map { n, option in
+                Reply(label: "\(n + 1) · \(option.uppercased())", answer: option, affirmative: false)
+            }
+        default:
+            return nil
+        }
+    }
+
+    /// Sends a quick reply. If it can't be sent the ticket turns blocked with the reason, no toast (SPEC section 6).
+    func quickReply(_ ticket: Ticket, _ answer: String) {
+        switch ticket.tool {
+        case .devin:
+            guard let devin = devinAccount, let session = ticket.externalId?.replacingOccurrences(of: "devin:", with: "") else { return }
+            replied(ticket, answer)
+            Task {
+                do { try await DevinAPI(token: devin.token).send(answer, org: devin.org, session: session) }
+                catch { failed(ticket, error) }
+            }
+        case .claudeCode:
+            guard let session = ticket.claudeSessionID else { return }
+            do {
+                try Launcher.type(answer, intoClaudeSession: session)
+                replied(ticket, answer)
+            } catch {
+                failed(ticket, error)
+            }
+        default:
+            return
+        }
+    }
+
+    private func replied(_ ticket: Ticket, _ answer: String) {
+        _ = try? store.update { tickets, now in
+            guard let i = tickets.firstIndex(where: { $0.id == ticket.id }) else { return }
+            tickets[i].quickReplyReady = false
+            tickets[i].questionType = .none
+            tickets[i].activity = "Reading your reply: \(answer)"
+            tickets[i].activityAt = now
+            try tickets[i].apply(.stillRunning, now: now)
+        }
+        reload()
+    }
+
+    private func failed(_ ticket: Ticket, _ error: Error) {
+        _ = try? store.update { tickets, now in
+            guard let i = tickets.firstIndex(where: { $0.id == ticket.id }) else { return }
+            tickets[i].lastMessage = "Your quick reply didn't send: \(error.localizedDescription)"
+            tickets[i].quickReplyReady = false
+            tickets[i].activity = nil
+            try tickets[i].apply(.blocked, now: now)
+        }
+        reload()
     }
 
     // MARK: Actions

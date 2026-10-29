@@ -48,8 +48,11 @@ public enum ClaudeCodeFeed {
                 tickets[i].activity = what
                 tickets[i].activityAt = what == nil ? nil : now
             }
-            func waitOnNina(_ i: Int) throws {
+            /// `typeable`: waiting at its ordinary prompt, so a typed quick reply becomes her next message.
+            /// Permission prompts and pick-lists are on-screen widgets and need Open.
+            func waitOnNina(_ i: Int, typeable: Bool = false) throws {
                 doing(i, nil)
+                tickets[i].quickReplyReady = typeable
                 try tickets[i].apply(.needsYou, now: now)
             }
 
@@ -64,6 +67,7 @@ public enum ClaudeCodeFeed {
             case "UserPromptSubmit":
                 if let asked { tickets[i].title = asked }
                 tickets[i].questionType = .none
+                tickets[i].quickReplyReady = false
                 doing(i, "Reading your message")
                 try tickets[i].apply(.stillRunning, now: now)
 
@@ -105,7 +109,7 @@ public enum ClaudeCodeFeed {
             case "Stop":
                 if let reply = payload["last_assistant_message"] as? String, !reply.isEmpty { tickets[i].lastMessage = reply }
                 tickets[i].questionType = QuestionDetector.detect(tickets[i].lastMessage)
-                try waitOnNina(i)
+                try waitOnNina(i, typeable: true)
 
             case "SessionEnd":
                 doing(i, nil)
