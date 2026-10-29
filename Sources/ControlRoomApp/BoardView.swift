@@ -46,6 +46,7 @@ struct BoardView: View {
             FaceView(face: model.restingFace, pixel: 3)
             Text("CONTROL ROOM").label(13, tracking: 0.12)
             Spacer()
+            HardStopBlock(model: model)
             Text(Self.dateLine(model.now)).font(Theme.font(13, .medium))
                 .padding(.trailing, 4)
             ShadowButton(title: adding ? "CLOSE" : "+ ADD") { adding.toggle() }
@@ -181,6 +182,32 @@ struct BoardView: View {
                     CompactRow(ticket: ticket, model: model, colour: Theme.mint)
                 }
             }
+        }
+    }
+}
+
+/// NEXT HARD STOP · 23 MIN · Pret weekly, in black. Nothing when there's nothing left today.
+struct HardStopBlock: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        if let stop = model.hardStop {
+            Text(stop.line(model.now))
+                .label(12, tracking: 0.08)
+                .lineLimit(1)
+                .foregroundStyle(Theme.white)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(Theme.ink)
+                .accessibilityLabel("Next hard stop in \(stop.minutes(from: model.now)) minutes: \(stop.title)")
+        } else if let problem = model.calendarProblem {
+            Text("NO CALENDAR")
+                .label(11, tracking: 0.08)
+                .padding(.horizontal, 10)
+                .frame(height: 36)
+                .overlay(Rectangle().strokeBorder(Theme.ink, lineWidth: 1))
+                .help(problem)
+                .accessibilityLabel(problem)
         }
     }
 }

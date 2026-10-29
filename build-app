@@ -26,6 +26,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Control Room shows how long until your next busy event. It only reads; nothing is changed.</string>
   <key>NSAppleEventsUsageDescription</key><string>Control Room types your quick replies into the Terminal window running that Claude Code session.</string>
 </dict>
 </plist>

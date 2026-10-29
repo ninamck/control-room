@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 8 of 9 done: companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), Devin and quick replies (6), quiet mode and End of day (7), and the scheduled watch list with the reader pane (8). The calendar line is last, step 9. Build order is in SPEC.md section 9.
+All nine steps done: ticket store and server (1), companion, panel and quick-add (2), Cursor and Claude Code feeds (3), the board (4), Hand off with Notion (5), Devin and quick replies (6), quiet mode and End of day (7), scheduled tasks (8), and the next hard stop from the calendar (9). Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -45,6 +45,10 @@ The app runs the local server, so `./cr` works whenever the app is open:
 - Tickets: `~/Library/Application Support/Control Room/tickets.json`
 - Settings and the server token: `config.local.json` in the same folder. Made on first run, never in the repo. `config.example.json` shows its shape.
 - The server listens on 127.0.0.1:47821 only and refuses anything without the token.
+
+## Calendar
+
+The board and Hand off show NEXT HARD STOP · 23 MIN · Pret weekly: the next busy event today from the Mac's Calendar. The panel shows it too when it's within the hour. macOS asks once for calendar access. Google calendars appear if the account is added in System Settings → Internet Accounts.
 
 ## Scheduled tasks
 

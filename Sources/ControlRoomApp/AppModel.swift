@@ -86,6 +86,7 @@ final class AppModel: ObservableObject {
         } catch {
             serverProblem = "The local server couldn't start: \(error.localizedDescription)"
         }
+        startCalendar()
         // Catch up on anything Cursor sent while the app was closed.
         EventQueue.drain(into: store)
         reload()
@@ -100,6 +101,7 @@ final class AppModel: ObservableObject {
                 guard let self else { return }
                 EventQueue.drain(into: self.store)
                 self.reload()
+                self.calendar.refresh()
             }
         }
     }
@@ -149,6 +151,21 @@ final class AppModel: ObservableObject {
         if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .overdue }
         if !wakers.isEmpty { return .needsYou }
         return .asleep
+    }
+
+    // MARK: Calendar
+
+    /// The next busy event today (SPEC section 5), and why it's missing if the calendar can't be read.
+    @Published private(set) var hardStop: HardStop?
+    @Published private(set) var calendarProblem: String?
+    private let calendar = CalendarWatch()
+
+    private func startCalendar() {
+        calendar.onChange = { [weak self] stop, problem in
+            self?.hardStop = stop
+            self?.calendarProblem = problem
+        }
+        calendar.start()
     }
 
     // MARK: Scheduled

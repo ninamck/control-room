@@ -42,6 +42,17 @@ struct PanelView: View {
                         .bottomRule()
                 }
                 counts
+                if let stop = model.hardStop, stop.minutes(from: model.now) <= 60 {
+                    Text(stop.line(model.now))
+                        .label(11, tracking: 0.08)
+                        .lineLimit(1)
+                        .foregroundStyle(Theme.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .frame(height: 30)
+                        .background(Theme.ink)
+                        .accessibilityLabel("Next hard stop in \(stop.minutes(from: model.now)) minutes: \(stop.title)")
+                }
                 if model.showWorking {
                     let working = model.working
                     ForEach(working.prefix(Self.maxWorkingRows)) { ticket in

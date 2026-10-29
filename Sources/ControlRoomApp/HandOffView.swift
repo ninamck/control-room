@@ -37,7 +37,9 @@ struct HandOffView: View {
             FaceView(face: model.restingFace, pixel: 3)
             Text("CONTROL ROOM").label(13, tracking: 0.12)
             Spacer()
+            HardStopBlock(model: model)
             Text(clock.string(from: model.now)).font(Theme.font(13, .medium))
+                .padding(.leading, 4)
         }
         .padding(.horizontal, 32)
         .frame(height: 56)
