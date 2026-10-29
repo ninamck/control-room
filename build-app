@@ -1,5 +1,6 @@
 #!/bin/sh
-# Builds "Control Room.app" into build/ and opens it.
+# Builds "Control Room.app", installs it in ~/Applications, and opens it.
+# --no-open builds into build/ only (for checks), without touching the installed app.
 set -e
 cd "$(dirname "$0")"
 
@@ -21,8 +22,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleIdentifier</key><string>local.nina.controlroom</string>
   <key>CFBundleExecutable</key><string>ControlRoom</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.2</string>
-  <key>CFBundleVersion</key><string>2</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleVersion</key><string>9</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
@@ -39,5 +40,12 @@ if [ "$1" != "--no-open" ]; then
   osascript -e 'quit app "Control Room"' >/dev/null 2>&1 || true
   pkill -x ControlRoom 2>/dev/null || true
   sleep 0.5
-  open "$APP"
+  # Its permanent home: the login item points here, and Spotlight finds just this one.
+  INSTALLED="$HOME/Applications/Control Room.app"
+  mkdir -p "$HOME/Applications"
+  rm -rf "$INSTALLED"
+  ditto "$APP" "$INSTALLED"
+  rm -rf "$APP"
+  echo "Installed $INSTALLED"
+  open "$INSTALLED"
 fi

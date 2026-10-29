@@ -1,5 +1,6 @@
 import AppKit
 import ControlRoomCore
+import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -44,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Started once everything above is connected, so End of day can open even if the app starts after 18:30.
             model.startServer(config: config)
             companion.start()
+            startAtLogin()
             self.model = model
             self.companion = companion
             self.board = board
@@ -57,6 +59,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert.runModal()
             NSApp.terminate(nil)
         }
+    }
+
+    /// Starts Control Room when Nina logs in, once it's installed in Applications (not test builds).
+    /// She can switch it off in System Settings → General → Login Items.
+    private func startAtLogin() {
+        let path = Bundle.main.bundlePath
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        guard path.hasPrefix("\(home)/Applications/") || path.hasPrefix("/Applications/") else { return }
+        let login = SMAppService.mainApp
+        // Only the first time: if she turns it off in System Settings, it stays off.
+        guard login.status == .notRegistered, !UserDefaults.standard.bool(forKey: "askedToStartAtLogin") else { return }
+        UserDefaults.standard.set(true, forKey: "askedToStartAtLogin")
+        try? login.register()
     }
 
     // Opening Control Room again from Finder or Spotlight while it's running brings up the board.

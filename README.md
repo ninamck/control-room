@@ -22,7 +22,7 @@ Needs Xcode (already on Nina's Mac). In Terminal, from this folder:
 ./build-app
 ```
 
-That builds `build/Control Room.app` and opens it. After that you can open it from Finder like any app.
+That builds Control Room, installs it in your Applications folder (~/Applications), and opens it. It starts by itself when you log in (switch that off in System Settings → General → Login Items). Open it any time from Spotlight.
 
 - The face sits in the notch on the MacBook screen. Hover over it or click it to open the panel.
 - Control-Option-C opens and closes the panel from anywhere. Escape closes it.
