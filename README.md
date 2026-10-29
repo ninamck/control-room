@@ -12,7 +12,7 @@ Personal project. One user, one Mac, nothing leaves the machine.
 
 ## Status
 
-Step 2 of 9 done: the notch companion with its four faces, the drop-down panel, and quick-add. Tickets are manual only so far. Build order is in SPEC.md section 9.
+Step 2 of 9 done: the notch companion with its four faces, the drop-down panel growing out of the notch, and quick-add. Cursor's agents feed in automatically (brought forward from the plan at Nina's request). Claude Code's feed is next, step 3. Build order is in SPEC.md section 9.
 
 ## Running it
 
@@ -45,6 +45,16 @@ The app runs the local server, so `./cr` works whenever the app is open:
 - Settings and the server token: `config.local.json` in the same folder. Made on first run, never in the repo. `config.example.json` shows its shape.
 - The server listens on 127.0.0.1:47821 only and refuses anything without the token.
 
+## Cursor's agents
+
+```
+./cr install-cursor-hooks
+```
+
+Adds Control Room to Cursor's hooks (`~/.cursor/hooks.json`, plus `~/.cursor/hooks/control-room.sh`). From then on every Cursor agent chat becomes a ticket on its own: Working while it runs, Waiting on you when it asks a question (including the Questions prompt), Done when it finishes, Blocked if it errors. Open brings up that project's Cursor window. Other hooks in that file are kept. `./cr remove-cursor-hooks` takes it out again.
+
+The hook answers Cursor immediately and sends the event in the background, so it never slows an agent down, even when Control Room is closed. The last 300 events (names only, no message text) are in `feed-events.log` next to the tickets.
+
 ## Adding a tool feed
 
 A feed is anything that sends tickets to the local server. Every call carries the header `Authorization: Bearer <token from config.local.json>`.
@@ -52,6 +62,7 @@ A feed is anything that sends tickets to the local server. Every call carries th
 - `POST /tickets` with JSON like `{"tool": "devin", "title": "PR #412: approve to merge", "thread": "transfer-requests", "last_message": "...", "deep_link": "https://...", "source": "automatic", "question_type": {"type": "yes_no"}}`. Only `tool` and `title` are required. New tickets wait on you unless `"state": "working"` is sent.
 - `POST /tickets/{id}/{action}` where action is `later`, `park`, `done`, `still-running`, `needs-you`, `blocked` or `drop`.
 - `GET /tickets` returns everything, with Later and midnight rules already applied.
+- `POST /feeds/cursor` takes Cursor hook events as they are. `CursorFeed.swift` maps them to ticket states; a new feed for another tool should follow the same shape.
 
 ## For Claude Code
 

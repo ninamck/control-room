@@ -110,6 +110,8 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var stateSince: Date
     public var laterCount: Int
     public var schedule: Schedule?
+    /// For automatic tickets: the feed's own id, like "cursor:<conversation id>", so later events find the same ticket.
+    public var externalID: String?
 
     /// While in later: when it comes back.
     public var laterUntil: Date?

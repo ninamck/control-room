@@ -14,6 +14,10 @@ final class Companion: NSObject, NSWindowDelegate {
     private var pinned = false
     /// Whether the notch window is showing the panel rather than just the face.
     private var notchExpanded = false
+    /// Drives the grow-out-of-the-notch animation.
+    private let growth = Growth()
+    /// Swaps back to the face once the shrink animation has finished.
+    private var pendingShrink: DispatchWorkItem?
     private var pendingCollapse: DispatchWorkItem?
     private var watchers: Set<AnyCancellable> = []
     private var hotKey: HotKey?
@@ -61,7 +65,7 @@ final class Companion: NSObject, NSWindowDelegate {
     }
 
     private func notchContent(_ size: NotchSize, expanded: Bool) -> AnyView {
-        AnyView(NotchView(model: model, size: size, expanded: expanded, openFromClick: { [weak self] in self?.open(pinned: true) }))
+        AnyView(NotchView(model: model, growth: growth, size: size, expanded: expanded, openFromClick: { [weak self] in self?.open(pinned: true) }))
     }
 
     /// Swaps the notch between face and panel and resizes in the same pass, so it never shows a half-way frame.
@@ -112,8 +116,15 @@ final class Companion: NSObject, NSWindowDelegate {
     private func open(pinned: Bool) {
         self.pinned = self.pinned || pinned
         if !model.panelOpen { model.panelOpen = true }
-        if menuPanel == nil { setNotchExpanded(true) }
-        resize()
+        if menuPanel == nil {
+            pendingShrink?.cancel()
+            if !notchExpanded { growth.grown = false }
+            setNotchExpanded(true)
+            resize()
+            grow(true)
+        } else {
+            resize()
+        }
         if pinned { (menuPanel?.window ?? notch?.window)?.makeKey() }
     }
 
@@ -121,13 +132,39 @@ final class Companion: NSObject, NSWindowDelegate {
         pendingCollapse?.cancel()
         pinned = false
         if model.panelOpen { model.panelOpen = false }
-        setNotchExpanded(false)
+        if notchExpanded {
+            // Shrink back into the notch, then swap to the face.
+            grow(false)
+            let work = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                self.setNotchExpanded(false)
+                self.resize()
+            }
+            pendingShrink?.cancel()
+            pendingShrink = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Growth.shrinkTime), execute: work)
+        }
         if let panel = menuPanel {
             panel.window.orderOut(nil)
             menuPanel = nil
         }
         resize()
         updateStatusItem()
+    }
+
+    private var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    /// Animates the panel out of (or back into) the notch. Instant when Reduce Motion is on.
+    private func grow(_ grown: Bool) {
+        guard growth.grown != grown else { return }
+        if reduceMotion {
+            growth.grown = grown
+            return
+        }
+        // Let the window take its full size first, then animate on the next pass.
+        DispatchQueue.main.async { [growth] in
+            withAnimation(grown ? Growth.growCurve : Growth.shrinkCurve) { growth.grown = grown }
+        }
     }
 
     @objc private func statusItemClicked() {
@@ -212,9 +249,18 @@ struct NotchSize {
     }
 }
 
+/// Whether the panel has grown out of the notch yet.
+final class Growth: ObservableObject {
+    @Published var grown = false
+    static let growCurve = Animation.spring(response: 0.32, dampingFraction: 0.86)
+    static let shrinkCurve = Animation.easeIn(duration: 0.16)
+    static let shrinkTime = 0.17
+}
+
 /// What lives in the notch window: just the face, or the black strip plus the panel.
 struct NotchView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var growth: Growth
     let size: NotchSize
     let expanded: Bool
     let openFromClick: () -> Void
@@ -228,6 +274,15 @@ struct NotchView: View {
             }
             .padding(.trailing, 8).padding(.bottom, 8)
             .fixedSize()
+            // Starts as a notch-sized window onto the panel and grows to show all of it.
+            .mask(alignment: .topLeading) {
+                GeometryReader { full in
+                    Rectangle()
+                        .frame(width: growth.grown ? full.size.width : size.collapsedWidth,
+                               height: growth.grown ? full.size.height : size.height)
+                        .offset(x: growth.grown ? 0 : PanelView.width / 2 - size.collapsedWidth / 2)
+                }
+            }
         } else {
             Button(action: openFromClick) {
                 HStack(spacing: 0) {

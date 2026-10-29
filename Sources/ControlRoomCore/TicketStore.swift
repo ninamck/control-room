@@ -48,6 +48,11 @@ public final class TicketStore: @unchecked Sendable {
         }
     }
 
+    /// Lets a feed find and change tickets in one step, so two events can't race each other.
+    public func update<T>(_ body: (inout [Ticket], Date) throws -> T) throws -> T {
+        try locked { try body(&tickets, now()) }
+    }
+
     /// Runs the timing rules and saves if anything changed. Called on a timer.
     public func tick() throws {
         try locked { () }

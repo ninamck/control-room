@@ -16,6 +16,9 @@ Control Room
   cr blocked <id>
   cr drop <id>                     delete it
 
+  cr install-cursor-hooks          send Cursor's agents to Control Room automatically
+  cr remove-cursor-hooks           stop sending them
+
   Tools: claude-code, claude-ai, cursor, grok, devin
   An id can be the first few letters shown by cr list.
 """
@@ -160,6 +163,16 @@ case "running": move("still-running", args.dropFirst().first, verb: "Working", c
 case "waiting": move("needs-you", args.dropFirst().first, verb: "Waiting on you", config: config)
 case "blocked": move("blocked", args.dropFirst().first, verb: "Blocked", config: config)
 case "drop": move("drop", args.dropFirst().first, verb: "Dropped", config: config)
+case "install-cursor-hooks":
+    do {
+        try CursorHooks.install()
+        print("Cursor's agents will now show up in Control Room. Cursor picks this up straight away; no restart needed.")
+    } catch { fail("Couldn't install: \(error.localizedDescription)") }
+case "remove-cursor-hooks":
+    do {
+        try CursorHooks.remove()
+        print("Removed. Cursor's agents won't be sent to Control Room any more.")
+    } catch { fail("Couldn't remove: \(error.localizedDescription)") }
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)
 }

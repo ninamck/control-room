@@ -64,6 +64,12 @@ public struct API: Sendable {
                                     questionType: new.questionType ?? .none, deepLink: new.deepLink ?? "",
                                     state: new.state ?? .needsYou)
                 return json(201, try store.add(ticket))
+            case ("POST", 2) where parts == ["feeds", "cursor"]:
+                guard let payload = try JSONSerialization.jsonObject(with: request.body) as? [String: Any] else {
+                    return error(400, "Expected a Cursor hook event.")
+                }
+                EventLog.record(payload)
+                return json(200, try CursorFeed.handle(payload, store: store))
             case ("POST", 3) where parts[0] == "tickets":
                 if parts[2] == "drop" { return json(200, try store.drop(parts[1])) }
                 guard let action = TicketAction(rawValue: parts[2]) else { return error(404, "Unknown action \(parts[2]).") }
