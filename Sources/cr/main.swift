@@ -193,7 +193,10 @@ case "remove-claude-hooks":
 case "set-notion-token":
     // Read without echo so the token never shows on screen or in shell history.
     guard let raw = getpass("Paste your Notion token (it won't show as you paste), then press Return: ") else { fail("Nothing pasted.") }
-    let token = String(cString: raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    var token = String(cString: raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    // Nothing shows while pasting, so a second paste is easy to do by accident. Keep one copy.
+    let half = token.count / 2
+    if token.count % 2 == 0, token.prefix(half) == token.suffix(half) { token = String(token.prefix(half)) }
     guard token.count > 20 else { fail("That doesn't look like a Notion token. It starts with ntn_ or secret_.") }
     var updated = config
     updated.notionToken = token
