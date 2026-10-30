@@ -104,6 +104,14 @@ The hook answers Cursor immediately and sends the event in the background, so it
 
 Run this yourself in Terminal: it adds Control Room to Claude Code's own settings (`~/.claude/settings.json`, plus `~/.claude/hooks/control-room.sh`), which Claude Code won't edit for itself. Every Claude Code session then becomes a ticket, wherever it runs (the Claude desktop app, Cursor's terminal, Terminal): Working while it runs with what it's doing, Waiting on you when it finishes a reply, asks a question, wants permission or presents a plan, and Done when you mark it or close the session. The session's title from Claude Code names it. Open goes back to the app the session runs in. The hook prints nothing, so it never adds anything to your conversations. `./cr remove-claude-hooks` takes it out again. New sessions pick it up straight away; sessions already open may need restarting.
 
+## Claude app and Grok Bot chats
+
+Both apps keep their chats on this Mac, and Control Room reads them every 10 seconds (read only; neither format is documented, so an app update can stop a feed until it's adjusted). Claude app task sessions show as working, replied or waiting for permission; scheduled runs land as quiet cards with their text and never wake the face. Grok Bot chats with an unread reply wait on you, and reading the reply in Grok Bot clears them. `./cr chats` shows what Control Room sees, without the chat text.
+
+Plain Claude chats (no folder or tools) live only on Anthropic's servers, so Control Room reads the Claude window itself through macOS Accessibility (System Settings → Privacy & Security → Accessibility → Control Room). Every 4 seconds it looks for the "Stop response" button and the chat's name. A chat it sees replying shows as working; when the reply finishes it waits on you, unless Claude was in front on that chat, and opening the chat clears it. It can only see the chat open in the window: move to another chat mid-reply and the ticket says so. It reads the window's buttons and headings, never the conversation itself, beyond the first line of the latest reply and question.
+
+To see how the window is laid out after a Claude update, create an empty file called `claude-window-probe` in `~/Library/Application Support/Control Room/`; within a few seconds Control Room writes `claude-window-probe.txt` beside it (buttons and headings only).
+
 ## Adding a tool feed
 
 A feed is anything that sends tickets to the local server. Every call carries the header `Authorization: Bearer <token from config.local.json>`.

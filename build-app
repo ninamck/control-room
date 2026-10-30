@@ -26,7 +26,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>
-  <key>CFBundleVersion</key><string>9</string>
+  <key>CFBundleVersion</key><string>10</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
@@ -35,7 +35,10 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --sign - "$APP" >/dev/null
+# Signed with Nina's Apple Development certificate when there is one, so macOS keeps
+# Accessibility and Automation permissions across rebuilds. Anyone else gets an ad-hoc signature.
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk '/Apple Development/ {print $2; exit}')
+codesign --force --sign "${IDENTITY:--}" "$APP" >/dev/null
 echo "Built $APP"
 
 if [ "$1" != "--no-open" ]; then

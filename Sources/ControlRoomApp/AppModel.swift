@@ -93,6 +93,9 @@ final class AppModel: ObservableObject {
         // Minutes tick over, Later tickets come back, done expires at midnight, and any stray queued events land.
         // The Claude app and Grok Bot keep their chats on this Mac; read them every 10 seconds.
         watchLocalChats()
+        claudeWindowTimer = Timer.scheduledTimer(withTimeInterval: 4, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.watchClaudeWindow() }
+        }
         localChatsTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.watchLocalChats() }
         }
@@ -386,8 +389,33 @@ final class AppModel: ObservableObject {
         let store = self.store
         Task.detached(priority: .utility) {
             let chats = ClaudeAppChats.scan() + GrokBotChats.scan()
+            if ClaudeWindow.ensureAllowed() { ClaudeWindow.probeIfAsked() }
             try? LocalChatFeed.apply(chats, store: store)
             await MainActor.run { self.readingLocalChats = false }
+        }
+    }
+
+    // MARK: Plain Claude chats
+
+    private var claudeWindowTimer: Timer?
+    private var readingClaudeWindow = false
+    private var claudeChats = ClaudeChatWatch()
+
+    /// Plain Claude chats leave nothing on disk, so the Claude window is read every few seconds instead.
+    func watchClaudeWindow() {
+        guard !readingClaudeWindow else { return }
+        readingClaudeWindow = true
+        let store = self.store
+        var watch = claudeChats
+        // Asked here on the main thread, where macOS keeps the frontmost app up to date.
+        let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier == ClaudeWindow.bundleID
+        Task.detached(priority: .utility) {
+            let views = ClaudeWindow.read(claudeInFront: front)
+            try? watch.observe(views, store: store)
+            await MainActor.run {
+                self.claudeChats = watch
+                self.readingClaudeWindow = false
+            }
         }
     }
 
