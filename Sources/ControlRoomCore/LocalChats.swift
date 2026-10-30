@@ -353,7 +353,11 @@ public enum LocalChatFeed {
                         try tickets[i].apply(.needsYou, now: now)
                     }
                     // A reply found on first sight has been waiting since it arrived, not since Control Room noticed.
-                    if isNew, chat.lastActivity < tickets[i].stateSince { tickets[i].stateSince = chat.lastActivity }
+                    // Found by id: the scheduled branch above may have removed an earlier ticket and shifted positions.
+                    if isNew, let j = tickets.firstIndex(where: { $0.externalId == chat.key }),
+                       chat.lastActivity < tickets[j].stateSince {
+                        tickets[j].stateSince = chat.lastActivity
+                    }
                 case .idle:
                     // Read in Grok Bot: its own unread flag cleared, so the reply has been seen.
                     if chat.tool == .grok, !chat.unread, tickets[i].state == .needsYou { try tickets[i].apply(.done, now: now) }
