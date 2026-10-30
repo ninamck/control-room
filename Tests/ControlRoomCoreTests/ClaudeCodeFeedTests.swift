@@ -118,3 +118,17 @@ private func event(_ name: String, _ extra: [String: Any] = [:]) -> [String: Any
     #expect(left.keys.sorted() == ["Stop"])
     #expect(removed["model"] as? String == "opus")
 }
+
+@Test func cursorEventsThroughClaudeHooksAreIgnored() throws {
+    let store = try makeStore()
+    // Cursor loads Claude Code's user hooks too, and sends its own events through them.
+    let fromCursor: [String: Any] = ["hook_event_name": "preToolUse", "session_id": "f018baa9", "conversation_id": "f018baa9",
+                                     "cursor_version": "3.26.13", "tool_name": "Shell"]
+    #expect(try ClaudeCodeFeed.handle(fromCursor, store: store) == nil)
+    var promptFromCursor = fromCursor
+    promptFromCursor["hook_event_name"] = "UserPromptSubmit"
+    #expect(try ClaudeCodeFeed.handle(promptFromCursor, store: store) == nil)
+    // An event name Claude Code doesn't send makes nothing either.
+    #expect(try ClaudeCodeFeed.handle(event("beforeSubmitPrompt", ["prompt": "x"]), store: store) == nil)
+    #expect(try store.all().isEmpty)
+}

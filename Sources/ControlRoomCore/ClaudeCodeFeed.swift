@@ -19,8 +19,10 @@ public enum ClaudeCodeFeed {
 
     @discardableResult
     public static func handle(_ payload: [String: Any], store: TicketStore) throws -> Ticket? {
-        guard let event = payload["hook_event_name"] as? String,
+        guard let event = payload["hook_event_name"] as? String, events.contains(event),
               let session = payload["session_id"] as? String, !session.isEmpty else { return nil }
+        // Cursor also runs the hooks in Claude Code's settings; its events go to the Cursor feed instead.
+        if payload["cursor_version"] != nil || payload["conversation_id"] != nil { return nil }
         let key = "claude-code:\(session)"
         let cwd = payload["cwd"] as? String
         let env = payload["_env"] as? [String: Any] ?? [:]
