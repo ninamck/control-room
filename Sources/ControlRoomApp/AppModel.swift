@@ -528,6 +528,15 @@ final class AppModel: ObservableObject {
     func openInCursor(folder: URL?) {
         guard let cursor = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.cursorID) else { return }
         if let folder, FileManager.default.fileExists(atPath: folder.path) {
+            // Cursor's own `cursor` command opens the folder in the editor window (or brings that window
+            // forward). Asking macOS to open the folder with Cursor lands in its Agents window instead.
+            let command = cursor.appendingPathComponent("Contents/Resources/app/bin/cursor")
+            if FileManager.default.isExecutableFile(atPath: command.path) {
+                let run = Process()
+                run.executableURL = command
+                run.arguments = [folder.path]
+                if (try? run.run()) != nil { return }
+            }
             NSWorkspace.shared.open([folder], withApplicationAt: cursor, configuration: NSWorkspace.OpenConfiguration())
         } else {
             NSWorkspace.shared.openApplication(at: cursor, configuration: .init())
