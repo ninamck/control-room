@@ -78,7 +78,7 @@ struct PanelView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            FaceView(face: model.isQuiet ? .asleep : .expanded, pixel: 3.5)
+            FaceView(face: model.face, size: 28)
             if model.isQuiet, let until = model.quietUntil {
                 // reference/05-quiet-and-quick-reply.html
                 Text("QUIET UNTIL \(Self.clock.string(from: until))").label(13)

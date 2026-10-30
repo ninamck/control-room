@@ -116,9 +116,11 @@ final class AppModel: ObservableObject {
 
     func reload() {
         now = Date()
+        let hadWaiting = !wakingTickets.isEmpty
         // Scheduled runs whose time has come land as cards first.
         try? watchList.land(into: store, now: now)
         tickets = (try? store.all()) ?? tickets
+        noticeCleared(hadWaiting: hadWaiting)
         watched = watchList.tasks
         openEndOfDayIfDue()
     }
@@ -145,20 +147,38 @@ final class AppModel: ObservableObject {
 
     var doneCount: Int { done.count }
 
-    var face: Face {
-        if panelOpen { return .expanded }
-        return restingFace
-    }
+    /// The companion's face (companion/SPEC-companion.md). Highest first: blocked, worried, alert,
+    /// talking (only while open), pleased (for 2 seconds after the queue clears), asleep.
+    /// Quiet comes before all of them: while quiet the face stays asleep whatever is waiting (SPEC section 4).
+    var face: Face { face(open: panelOpen) }
 
     /// The face as it would be with the panel closed: what's waiting, not whether it's being looked at.
-    var restingFace: Face {
-        // Quiet: asleep whatever is waiting. No colour change, no animation (SPEC section 4).
-        if isQuiet { return .asleep }
-        // Scheduled output never wakes the companion.
-        let wakers = waiting.filter { $0.kind == .interactive }
-        if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .overdue }
-        if !wakers.isEmpty { return .needsYou }
+    var restingFace: Face { face(open: false) }
+
+    private func face(open: Bool) -> Face {
+        if isQuiet { return .quiet }
+        let wakers = wakingTickets
+        if wakers.contains(where: { $0.state == .blocked }) { return .blocked }
+        if wakers.contains(where: { $0.signal(at: now) == .coral }) { return .worried }
+        if !wakers.isEmpty { return .alert }
+        if open { return .talking }
+        if let pleasedUntil, now < pleasedUntil { return .pleased }
         return .asleep
+    }
+
+    /// Scheduled output never wakes the companion.
+    private var wakingTickets: [Ticket] { waiting.filter { $0.kind == .interactive } }
+
+    /// Set when the last waiting ticket goes: the pleased face shows until then.
+    @Published private var pleasedUntil: Date?
+
+    /// Called after every reload: the queue just emptied, so look pleased for 2 seconds.
+    private func noticeCleared(hadWaiting: Bool) {
+        guard hadWaiting, wakingTickets.isEmpty, !isQuiet else { return }
+        pleasedUntil = now.addingTimeInterval(2)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.05) { [weak self] in
+            self?.now = Date()
+        }
     }
 
     // MARK: Calendar

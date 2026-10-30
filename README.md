@@ -126,7 +126,7 @@ A feed is anything that sends tickets to the local server. Every call carries th
 Swift package, no outside dependencies.
 
 - `Sources/ControlRoomCore`: ticket model, timing rules (`Rules.swift`), quick-add parsing, store and server.
-- `Sources/ControlRoomApp`: the Mac app. `Companion.swift` places the notch window and menu bar fallback; `PanelView.swift` is the panel; `Face.swift` holds the four 8×8 faces.
+- `Sources/ControlRoomApp`: the Mac app. `Companion.swift` places the notch window and menu bar fallback; `PanelView.swift` is the panel; `Face.swift` draws the companion's faces from the geometry in `companion/faces/` (see `companion/SPEC-companion.md`); the app icon is `icon/ControlRoom.icns`.
 - `Sources/cr`: the command line.
 - `Resources/fonts`: Archivo (SIL Open Font License), packaged into the app by `build-app`.
 - `swift test` runs the rules tests. `"build/Control Room.app/Contents/MacOS/ControlRoom" --snapshot <folder>` renders the panel and faces to PNGs to compare with `reference/`.

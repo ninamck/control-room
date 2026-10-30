@@ -71,7 +71,9 @@ enum Snapshot {
         let faces = HStack(spacing: 20) {
             ForEach(Face.allCases, id: \.self) { face in
                 VStack(spacing: 8) {
-                    FaceView(face: face, pixel: 5).frame(width: 64, height: 64).background(Theme.ink)
+                    FaceView(face: face, size: 40).frame(width: 64, height: 64).background(Theme.ink)
+                    // Notch size, where bars are held at 1 point.
+                    FaceView(face: face, size: 18).frame(width: 64, height: 32).background(Theme.ink)
                     Text(face.rawValue).font(Theme.font(11, .bold))
                 }
             }

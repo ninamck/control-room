@@ -159,14 +159,19 @@ Notion:
 
 ### Notch companion
 
-Lives at the top centre of the screen in the notch housing. If engineering judges a true notch window too fragile (multiple displays, menu bar auto-hide), a menu bar extra is acceptable; Nina has approved that fallback. The companion is an 8 by 8 pixel face, yellow, drawn crisp with no anti-aliasing.
+Lives at the top centre of the screen in the notch housing. If engineering judges a true notch window too fragile (multiple displays, menu bar auto-hide), a menu bar extra is acceptable; Nina has approved that fallback.
 
-Face states:
+The companion is a geometric face: a filled square with two small round eyes and a flat rectangular mouth, lots of empty ground, no pixel grid. Full drawing rules, geometry and the state-to-face table are in `companion/SPEC-companion.md`; SVGs for every face are in `companion/faces/`. Summary:
 
-- Asleep: nothing waiting, or quiet mode. Eyes closed, flat mouth.
-- Needs you: at least one needs_you ticket. Eyes open, brows raised.
-- Expanded: panel open. Eyes open, mouth open.
-- Past 15 minutes: any needs_you ticket is coral. Face turns coral, brows down.
+- Asleep (02): nothing waiting. Eyes are lines. Yellow.
+- Alert (03): at least one needs_you ticket. Round eyes, slightly larger. Yellow.
+- Talking (04): panel open. Mouth becomes a block. Yellow.
+- Worried (05): any needs_you ticket past 15 minutes. Brows tilt in, mouth shrinks. Coral. Concerned, not angry.
+- Quiet (08): Quiet mode on. Asleep plus a pause mark. Yellow.
+- Blocked (09): any blocked ticket. Crossed eyes. Coral.
+- Pleased (06): queue just cleared. Squared smile, mint, shown for 2 seconds then back to asleep.
+
+Priority when several apply, highest first: blocked, worried, alert, talking (only while open), quiet, pleased (transient), asleep.
 
 Collapsed, the notch shows only the face. No text.
 
@@ -243,7 +248,7 @@ Colour:
 | Coral | #E8604F | past 15 min, blocked, missed |
 | Sky | #A9C4F2 | working |
 | Mint | #BFE3C4 | done, affirmative buttons |
-| Yellow | #F8C94A | the companion, Hand off accent |
+| Yellow | #F8C94A | the companion's ground, Hand off accent |
 | Lavender | #CFC9EC | Notion panel header, optional desktop tint |
 | Body grey | #4A4640 | secondary text on white or paper only |
 
@@ -256,7 +261,7 @@ Type: Archivo (Google Fonts), four weights.
 
 Shape:
 
-- Corner radius 0 everywhere, including inputs and the companion.
+- Corner radius 0 everywhere, including inputs and the companion's square. The only curves in the app are the companion's eyes.
 - Lines are 1px ink.
 - Shadows are solid ink offsets with no blur and no transparency: 3px on buttons, 6px on cards, 8px on the notch panel.
 - Background grid: 40px lines in #E8E3D8 on paper. Decorative only; drop it if it reads as noise at real size.

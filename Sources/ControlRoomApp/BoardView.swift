@@ -43,7 +43,7 @@ struct BoardView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            FaceView(face: model.restingFace, pixel: 3)
+            FaceView(face: model.restingFace, size: 24)
             Text("CONTROL ROOM").label(13, tracking: 0.12)
             Spacer()
             HardStopBlock(model: model)

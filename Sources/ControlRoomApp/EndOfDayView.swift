@@ -14,7 +14,7 @@ struct EndOfDayView: View {
         let summary = model.endOfDay
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                FaceView(face: model.restingFace, pixel: 3)
+                FaceView(face: model.restingFace, size: 24)
                 Text("CONTROL ROOM").label(13, tracking: 0.12)
                 Spacer()
                 Text(BoardView.dateLine(model.now)).font(Theme.font(13, .medium))

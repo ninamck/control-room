@@ -88,7 +88,7 @@ final class Companion: NSObject, NSWindowDelegate {
             NSStatusBar.system.removeStatusItem(item)
             statusItem = nil
         }
-        statusItem?.button?.image = model.face.image(pixel: 2)
+        statusItem?.button?.image = model.face.image(size: 16)
     }
 
     // MARK: Open and close
@@ -225,7 +225,7 @@ final class Companion: NSObject, NSWindowDelegate {
             let x = min(max(anchor.midX - size.width / 2, screen.minX + 8), screen.maxX - size.width - 8)
             panel.window.setFrame(NSRect(x: x, y: anchor.minY - size.height - 4, width: size.width, height: size.height), display: true)
         }
-        statusItem?.button?.image = model.face.image(pixel: 2)
+        statusItem?.button?.image = model.face.image(size: 16)
     }
 }
 
@@ -233,10 +233,10 @@ final class Companion: NSObject, NSWindowDelegate {
 struct NotchSize {
     let width: CGFloat
     let height: CGFloat
-    /// Grid square size for the face, a whole number of points so it stays crisp.
-    var pixel: CGFloat { max(2, floor(height * 0.6 / 8)) }
+    /// The face's side, in whole points.
+    var face: CGFloat { max(16, floor(height * 0.55)) }
     /// Black space either side of the notch; the face sits in the right one.
-    var ear: CGFloat { pixel * 8 + 14 }
+    var ear: CGFloat { face + 14 }
     var collapsedWidth: CGFloat { width + ear * 2 }
 
     init(screen: NSScreen) {
@@ -287,7 +287,7 @@ struct NotchView: View {
             Button(action: openFromClick) {
                 HStack(spacing: 0) {
                     Theme.ink.frame(width: size.ear + size.width)
-                    FaceView(face: model.face, pixel: size.pixel)
+                    FaceView(face: model.face, size: size.face)
                         .frame(width: size.ear, height: size.height)
                         .background(Theme.ink)
                 }
