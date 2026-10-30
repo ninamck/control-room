@@ -17,6 +17,8 @@ final class AppModel: ObservableObject {
     /// Opens the board window. Set by the app at launch.
     var openBoard: () -> Void = {}
     /// Opens Hand off, optionally with a brief already written (from End of day). Set by the app at launch.
+    /// Which page the board window shows.
+    @Published var boardPage: BoardPage = .board
     var openHandOffWith: (_ brief: String?, _ replacing: String?) -> Void = { _, _ in }
 
     /// Opens Hand off. From End of day it carries the put-off ticket's title, and that ticket is
@@ -62,9 +64,10 @@ final class AppModel: ObservableObject {
     /// Remembered settings (quiet, End of day shown). Snapshots pass their own so they never touch Nina's.
     let defaults: UserDefaults
 
-    init(store: TicketStore, defaults: UserDefaults = .standard) {
+    init(store: TicketStore, defaults: UserDefaults = .standard, watchList: WatchList = WatchList()) {
         self.store = store
         self.defaults = defaults
+        self.watchList = watchList
         quietUntil = defaults.object(forKey: "quietUntil") as? Date
         store.onChange = { [weak self] in
             DispatchQueue.main.async { self?.reload() }
@@ -198,7 +201,7 @@ final class AppModel: ObservableObject {
 
     // MARK: Scheduled
 
-    let watchList = WatchList()
+    let watchList: WatchList
     /// The watch list as last read, for the views.
     @Published private(set) var watched: [WatchedTask] = []
     /// Opens the reader pane for a scheduled result. Set by the app at launch.

@@ -33,7 +33,9 @@ enum Snapshot {
 
         let scratch = UserDefaults(suiteName: "local.nina.controlroom.snapshot")!
         scratch.removePersistentDomain(forName: "local.nina.controlroom.snapshot")
-        let model = AppModel(store: store, defaults: scratch)
+        // Sample schedules go in a scratch watch list too, never Nina's real one.
+        let watchList = WatchList(fileURL: file.deletingPathExtension().appendingPathExtension("watch.json"))
+        let model = AppModel(store: store, defaults: scratch, watchList: watchList)
         model.reload()
         model.panelOpen = true
         model.showWorking = true

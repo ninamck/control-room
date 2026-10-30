@@ -39,7 +39,9 @@ struct HandOffView: View {
             Spacer()
             HardStopBlock(model: model)
             Text(clock.string(from: model.now)).font(Theme.font(13, .medium))
-                .padding(.leading, 4)
+                .padding(.leading, 4).padding(.trailing, 4)
+            ShadowButton(title: "← BOARD") { close() }
+                .accessibilityLabel("Back to the board")
         }
         .padding(.horizontal, 32)
         .frame(height: 56)

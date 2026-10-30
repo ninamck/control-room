@@ -18,6 +18,9 @@ struct EndOfDayView: View {
                 Text("CONTROL ROOM").label(13, tracking: 0.12)
                 Spacer()
                 Text(BoardView.dateLine(model.now)).font(Theme.font(13, .medium))
+                    .padding(.trailing, 4)
+                ShadowButton(title: "← BOARD") { close() }
+                    .accessibilityLabel("Back to the board")
             }
             .padding(.horizontal, 32)
             .frame(height: 56)

@@ -7,8 +7,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: AppModel?
     private var companion: Companion?
     private var board: BoardWindow?
-    private var handOff: HandOffWindow?
-    private var endOfDay: EndOfDayWindow?
     private var reader: ReaderWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -26,21 +24,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let model = AppModel(store: try TicketStore())
             let companion = Companion(model: model)
             let board = BoardWindow(model: model)
-            let handOff = HandOffWindow(model: model)
             model.openBoard = { [weak companion, weak board] in
                 companion?.collapse()
                 board?.show()
             }
-            let endOfDay = EndOfDayWindow(model: model)
             let reader = ReaderWindow(model: model)
             model.openReader = { [weak reader] ticket in reader?.show(ticket) }
-            model.openHandOffWith = { [weak companion, weak handOff] brief, replacing in
+            model.openHandOffWith = { [weak companion, weak board] brief, replacing in
                 companion?.collapse()
-                handOff?.show(brief: brief, replacing: replacing)
+                board?.showHandOff(brief: brief, replacing: replacing)
             }
-            model.openEndOfDay = { [weak companion, weak endOfDay] in
+            model.openEndOfDay = { [weak companion, weak board] in
                 companion?.collapse()
-                endOfDay?.show()
+                board?.show(.endOfDay)
             }
             // Started once everything above is connected, so End of day can open even if the app starts after 18:30.
             model.startServer(config: config)
@@ -49,8 +45,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.model = model
             self.companion = companion
             self.board = board
-            self.handOff = handOff
-            self.endOfDay = endOfDay
             self.reader = reader
         } catch {
             let alert = NSAlert()

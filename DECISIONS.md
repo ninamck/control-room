@@ -35,3 +35,5 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **The app is signed with Nina's Apple Development certificate** when the Mac has one, so macOS keeps Accessibility and Automation permissions across rebuilds. Without one it falls back to an ad-hoc signature.
 - **The app icon is the neutral face (01), not asleep (02)** (Nina chose this). `tools/make-icon.swift` redraws the whole icon/ set from it.
 - **Quiet outranks every other face**, though the companion spec lists it below alert and worried: SPEC section 4 says the face stays asleep while quiet, whatever is waiting, so it shows the quiet face.
+- **Hand off and End of day open inside the board window** (Nina asked for one window). Each has a "← BOARD" button; Cancel, Go and Close the day also go back to the board. The reader pane for scheduled results is still its own window.
+- **Snapshots use a scratch watch list.** Rendering the board once wrote its sample schedules into the real watch list, which showed up as duplicate rows and two fake Morning brief cards; those were removed.
