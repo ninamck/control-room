@@ -30,3 +30,4 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Control Room starts at login** from ~/Applications, registered once by the app itself. Turning it off in System Settings → General → Login Items is respected.
 - **Cursor also runs Claude Code's hooks** (it loads ~/.claude/settings.json). The Claude Code feed ignores those events, which carry cursor_version; the Cursor feed already covers them. The Claude Code feed only makes tickets from Claude Code's own event names.
 - **Open and Hand off go to Cursor's editor window**, using Cursor's own `cursor` command on the project folder, not its Agents window.
+- **Claude app chats aren't watched.** The Claude app has no hooks; task-style work goes in its Code tab, which the Claude Code feed already tracks. Ordinary Claude and Grok chats stay quick-add tickets. (Watching the app's window via Accessibility was considered and left out: it only sees the open chat and is fragile.)
