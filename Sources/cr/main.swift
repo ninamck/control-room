@@ -23,6 +23,7 @@ Control Room
   cr set-notion-token              connect the Ready to delegate list to Notion
   cr set-devin-token               connect your Devin sessions
   cr set-calendar-link             connect your calendar for the next hard stop
+  cr chats                         what the Claude app and Grok Bot feeds see
   cr calendar [tomorrow]           today's (or tomorrow's) meetings and the next hard stop
 
   Tools: claude-code, claude-ai, cursor, grok, devin
@@ -282,6 +283,22 @@ case "calendar":
         print("  \(clock.string(from: event.start))  \(event.title)\(event.start <= now ? "  (started)" : "")")
     }
     print(HardStop.next(in: today, now: now).map { $0.line(now) } ?? "No more hard stops today.")
+case "chats":
+    // What the Claude app and Grok Bot feeds see right now: state and age only.
+    let now = Date()
+    for (label, chats) in [("Claude app", ClaudeAppChats.scan(now: now)), ("Grok Bot", GrokBotChats.scan(now: now))] {
+        print("\(label): \(chats.count) chat\(chats.count == 1 ? "" : "s") active in the last two days")
+        for chat in chats.sorted(by: { $0.lastActivity > $1.lastActivity }) {
+            let state: String = switch chat.status {
+            case .working(let what): "working · \(what)"
+            case .replied: "replied"
+            case .waiting: "waiting on you"
+            case .idle: "quiet"
+            }
+            let minutes = Int(now.timeIntervalSince(chat.lastActivity) / 60)
+            print("  \(minutes < 60 ? "\(minutes)m" : "\(minutes / 60)h") ago  \(chat.kind == .scheduled ? "scheduled · \(chat.cadence ?? "")" : "chat")  \(state)\(chat.unread ? " · unread" : "")")
+        }
+    }
 case "help", "-h", "--help": print(usage)
 default: print(usage); exit(1)
 }

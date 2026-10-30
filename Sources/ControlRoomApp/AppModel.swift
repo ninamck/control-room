@@ -91,6 +91,11 @@ final class AppModel: ObservableObject {
         EventQueue.drain(into: store)
         reload()
         // Minutes tick over, Later tickets come back, done expires at midnight, and any stray queued events land.
+        // The Claude app and Grok Bot keep their chats on this Mac; read them every 10 seconds.
+        watchLocalChats()
+        localChatsTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.watchLocalChats() }
+        }
         // Devin has no hooks, so ask it every 30 seconds: quick enough to notice, gentle on its API.
         pollDevin()
         devinTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
@@ -369,6 +374,23 @@ final class AppModel: ObservableObject {
         return nil
     }
 
+    // MARK: Claude app and Grok Bot
+
+    private var localChatsTimer: Timer?
+    private var readingLocalChats = false
+
+    /// Reads both apps' chat files off the main thread, then updates the tickets.
+    func watchLocalChats() {
+        guard !readingLocalChats else { return }
+        readingLocalChats = true
+        let store = self.store
+        Task.detached(priority: .utility) {
+            let chats = ClaudeAppChats.scan() + GrokBotChats.scan()
+            try? LocalChatFeed.apply(chats, store: store)
+            await MainActor.run { self.readingLocalChats = false }
+        }
+    }
+
     // MARK: Devin
 
     private var devinAccount: (token: String, org: String, user: String)? {
@@ -501,6 +523,11 @@ final class AppModel: ObservableObject {
         }
         // Claude Code goes back to wherever the session runs: Cursor's terminal (that project's window),
         // the Claude desktop app, or the terminal app it was started from.
+        // Chats read from the Claude app or Grok Bot open that app.
+        if ticket.tool != .claudeCode, ticket.source == .automatic, let app = ticket.hostApp {
+            openApp(app, fallback: ticket.tool == .grok ? "https://grok.com" : "https://claude.ai")
+            return
+        }
         if ticket.tool == .claudeCode, ticket.source == .automatic {
             switch ticket.hostApp {
             case Self.cursorID: openInCursor(folder: QuickAdd.localFolder(ticket.deepLink))
