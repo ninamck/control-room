@@ -8,6 +8,7 @@ struct BoardView: View {
     var scrolls = true
     @State private var adding = false
     @State private var showAllWorking = false
+    @State private var showQuiet = false
     @State private var showDone = false
 
     static let workingShown = 8
@@ -121,7 +122,7 @@ struct BoardView: View {
         VStack(alignment: .leading, spacing: 28) {
             if !model.landed.isEmpty { landed }
             decisions
-            if !model.working.isEmpty { working }
+            if !model.working.isEmpty || !model.goneQuiet.isEmpty { working }
             WatchSection(model: model)
             if showDone { done }
         }
@@ -163,7 +164,7 @@ struct BoardView: View {
                 .accessibilityAddTraits(.isHeader)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(shown) { ticket in
-                    CompactRow(ticket: ticket, model: model, colour: Theme.sky)
+                    CompactRow(ticket: ticket, model: model, colour: Theme.sky, pings: true)
                 }
             }
             if all.count > Self.workingShown {
@@ -172,6 +173,23 @@ struct BoardView: View {
                         .font(Theme.font(12, .bold)).underline()
                 }
                 .buttonStyle(.plain)
+            }
+            let quiet = model.goneQuiet
+            if !quiet.isEmpty {
+                Button { showQuiet.toggle() } label: {
+                    Text("\(quiet.count) gone quiet: no news for over 30 minutes · \(showQuiet ? "hide" : "show")")
+                        .font(Theme.font(12, .medium)).underline()
+                        .foregroundStyle(Theme.bodyGrey)
+                }
+                .buttonStyle(.plain)
+                .help("Most likely closed without saying so. New activity puts them back in Working; after a day they're cleared.")
+                if showQuiet {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                        ForEach(quiet) { ticket in
+                            CompactRow(ticket: ticket, model: model, colour: Theme.paper)
+                        }
+                    }
+                }
             }
         }
     }
@@ -382,9 +400,23 @@ struct CompactRow: View {
     let ticket: Ticket
     @ObservedObject var model: AppModel
     let colour: Color
+    /// Working rows carry a Ping button.
+    var pings = false
     @FocusState private var focused: Bool
 
     var body: some View {
+        HStack(spacing: 0) {
+            row
+            if pings {
+                PingCell(ticket: ticket, model: model)
+                    .frame(width: 80, height: 48)
+                    .overlay(Rectangle().strokeBorder(Theme.ink, lineWidth: 1))
+                    .padding(.leading, -1)
+            }
+        }
+    }
+
+    private var row: some View {
         Button { model.open(ticket) } label: {
             HStack(spacing: 14) {
                 colour.frame(width: 10)

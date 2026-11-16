@@ -126,10 +126,12 @@ final class AppModel: ObservableObject {
     func reload() {
         now = Date()
         let hadWaiting = !wakingTickets.isEmpty
+        let before = tickets
         // Scheduled runs whose time has come land as cards first.
         try? watchList.land(into: store, now: now)
         tickets = (try? store.all()) ?? tickets
         noticeCleared(hadWaiting: hadWaiting)
+        noticePings(before: before)
         watched = watchList.tasks
         openEndOfDayIfDue()
     }
@@ -142,9 +144,84 @@ final class AppModel: ObservableObject {
             .sorted { $0.stateSince < $1.stateSince }
     }
 
-    /// Running agents, longest running first.
+    /// Running agents, longest running first. Chats with no news for half an hour don't count (see goneQuiet).
     var working: [Ticket] {
-        tickets.filter { $0.state == .working }.sorted { $0.stateSince < $1.stateSince }
+        tickets.filter { $0.state == .working && !$0.goneQuiet(at: now) }.sorted { $0.stateSince < $1.stateSince }
+    }
+
+    /// Said they were working but nothing's been heard for half an hour: most likely closed without saying so.
+    /// Any new activity puts them back in Working; after a day they're cleared away.
+    var goneQuiet: [Ticket] {
+        tickets.filter { $0.goneQuiet(at: now) }.sorted { $0.lastHeard > $1.lastHeard }
+    }
+
+    // MARK: Ping me
+
+    /// A pinged chat has replied and is waiting: the face shows for it even when switched off.
+    var pingWaiting: Bool {
+        tickets.contains { $0.pingMe == true && ($0.state == .needsYou || $0.state == .blocked) }
+    }
+
+    /// The face is in the notch: switched on, or a chat Nina asked about has come back.
+    var faceShowing: Bool { companionOn || pingWaiting }
+
+    /// Shows a short message under the notch. Set by the companion.
+    var toast: (String) -> Void = { _ in }
+
+    func togglePing(_ ticket: Ticket) {
+        let on = ticket.pingMe != true
+        try? store.update { tickets, _ in
+            if let i = tickets.firstIndex(where: { $0.id == ticket.id }) { tickets[i].pingMe = on ? true : nil }
+        }
+        toast(on ? "I'll ping you when it replies" : "No ping for that one")
+    }
+
+    /// Asked for from the keyboard: ping the chat Nina is in. That's the most recently active working chat
+    /// in the app in front. Sent a moment ago and not seen yet? The next one to start there gets it.
+    func pingFrontmost() {
+        guard let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
+        let here = tickets.filter { $0.state == .working && Self.app(of: $0) == app }
+            .max { $0.lastHeard < $1.lastHeard }
+        if let here {
+            if here.pingMe != true { togglePing(here) } else { toast("Already pinging this one") }
+        } else {
+            pendingPing = (app, Date().addingTimeInterval(20))
+            toast("I'll ping you when it replies")
+        }
+    }
+
+    /// An app whose next new working chat should be pinged, and until when.
+    private var pendingPing: (app: String, until: Date)?
+
+    static func app(of ticket: Ticket) -> String? {
+        if let host = ticket.hostApp { return host }
+        switch ticket.tool {
+        case .cursor: return cursorID
+        case .claudeAI, .claudeCode: return "com.anthropic.claudefordesktop"
+        case .grok: return "com.anysphere.sand"
+        case .devin: return nil
+        }
+    }
+
+    /// After every reload: claims a waiting ping for a newly working chat, and nudges once for each
+    /// pinged chat that has just replied.
+    private func noticePings(before: [Ticket]) {
+        let old = Dictionary(before.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        if let pending = pendingPing {
+            if pending.until < now {
+                pendingPing = nil
+            } else if let started = tickets.first(where: { $0.state == .working && $0.pingMe != true && Self.app(of: $0) == pending.app
+                                                           && (old[$0.id]?.state != .working) }) {
+                pendingPing = nil
+                try? store.update { tickets, _ in
+                    if let i = tickets.firstIndex(where: { $0.id == started.id }) { tickets[i].pingMe = true }
+                }
+            }
+        }
+        let replied = tickets.filter { t in
+            t.pingMe == true && (t.state == .needsYou || t.state == .blocked) && old[t.id].map { $0.state == .working } == true
+        }
+        if !replied.isEmpty { NSSound(named: "Glass")?.play() }
     }
 
     var workingCount: Int { working.count }

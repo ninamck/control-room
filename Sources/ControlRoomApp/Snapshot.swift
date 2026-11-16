@@ -26,7 +26,11 @@ enum Snapshot {
         var busy = Ticket(tool: .cursor, source: .automatic, title: "Does this go across to how the variances are viewed? So all storage areas…", thread: "New AI direction 20260327", state: .working, stateSince: ago(4))
         busy.activity = "Running npm run test:e2e -- basket"
         busy.activityAt = now.addingTimeInterval(-12)
+        busy.pingMe = true
         _ = try? store.add(busy)
+        var quiet = Ticket(tool: .cursor, source: .automatic, title: "Old chat nobody closed", state: .working, stateSince: ago(300))
+        quiet.activityAt = ago(240)
+        _ = try? store.add(quiet)
         _ = try? store.add(Ticket(tool: .claudeCode, source: .automatic, title: "Mixpanel plan: mapping AI events", thread: "edify-web", state: .working, stateSince: ago(11)))
         _ = try? store.add(Ticket(tool: .grok, title: "Competitor pricing research", state: .working, stateSince: ago(2)))
         for _ in 0..<4 { _ = try? store.add(Ticket(tool: .cursor, title: "d", state: .done)) }

@@ -65,6 +65,7 @@ struct PanelView: View {
                             .padding(.horizontal, 16).padding(.vertical, 8)
                             .bottomRule()
                     }
+                    GoneQuietLine(model: model)
                 }
                 QuickAddField(model: model, showsOpenBoard: true)
             }
@@ -390,6 +391,9 @@ struct WorkingRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
+            PingCell(ticket: ticket, model: model)
+                .frame(width: 70)
+                .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
             CellButton(title: "OPEN", strong: true, divider: false) { model.open(ticket) }
                 .frame(width: 90)
                 .overlay(alignment: .leading) { Theme.ink.frame(width: 1) }
@@ -407,6 +411,37 @@ struct WorkingRow: View {
         if seconds < 60 { return "\(seconds)s ago" }
         let minutes = seconds / 60
         return minutes < 60 ? "\(minutes) min ago" : "\(minutes / 60)h ago"
+    }
+}
+
+/// Ping me: nudge Nina when this chat replies. Yellow, the companion's colour, while it's on.
+struct PingCell: View {
+    let ticket: Ticket
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        let on = ticket.pingMe == true
+        CellButton(title: on ? "PINGING" : "PING", fill: on ? Theme.yellow : Theme.white, divider: false) { model.togglePing(ticket) }
+            .accessibilityLabel(on ? "Stop pinging when this replies" : "Ping me when this replies")
+            .help(on ? "You'll get a sound and the face when it replies" : "Ping me when it replies (Control-Option-P from the chat)")
+    }
+}
+
+/// "3 gone quiet": working chats with no news for half an hour, kept out of the Working count.
+struct GoneQuietLine: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        let count = model.goneQuiet.count
+        if count > 0 {
+            Text("\(count) gone quiet · no news for over 30 min")
+                .font(Theme.font(11.5, .medium))
+                .foregroundStyle(Theme.bodyGrey)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.vertical, 8)
+                .bottomRule()
+                .help("Most likely closed without saying so. New activity puts them back in Working; after a day they're cleared.")
+        }
     }
 }
 

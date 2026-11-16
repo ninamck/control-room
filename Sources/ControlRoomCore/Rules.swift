@@ -4,6 +4,10 @@ import Foundation
 public enum Rules {
     /// needs_you turns coral after this long.
     public static let coralAfter: TimeInterval = 15 * 60
+    /// A working chat with no news for this long is counted as gone quiet, not working.
+    public static let quietAfter: TimeInterval = 30 * 60
+    /// A gone-quiet chat is cleared away after this long. Any new activity brings it back.
+    public static let clearQuietAfter: TimeInterval = 24 * 3600
     /// Later hides a ticket for this long.
     public static let laterFor: TimeInterval = 30 * 60
 
@@ -14,12 +18,13 @@ public enum Rules {
     }
 
     /// Applies everything that happens with the passing of time:
-    /// Later tickets come back, and done tickets expire at midnight.
+    /// Later tickets come back, done tickets expire at midnight, and chats quiet for a day are cleared.
     public static func tick(_ tickets: [Ticket], now: Date, calendar: Calendar = .current) -> [Ticket] {
         let startOfToday = calendar.startOfDay(for: now)
         return tickets.compactMap { ticket in
             var t = ticket
             if t.state == .done && t.stateSince < startOfToday { return nil }
+            if t.goneQuiet(at: now), now.timeIntervalSince(t.lastHeard) >= clearQuietAfter { return nil }
             if t.state == .later, let until = t.laterUntil, until <= now {
                 t.state = .needsYou
                 t.stateSince = t.waitingSince ?? t.stateSince
@@ -59,12 +64,14 @@ extension Ticket {
             waitingSince = stateSince
             laterUntil = now.addingTimeInterval(Rules.laterFor)
             laterCount += 1
+            pingMe = nil
             state = .later
             stateSince = now
         case .tomorrow:
             guard state == .needsYou else { throw RuleError("Only a ticket waiting on you can wait until tomorrow.") }
             waitingSince = stateSince
             laterUntil = Rules.nextNineAM(after: now)
+            pingMe = nil
             state = .later
             stateSince = now
         case .keep:
@@ -78,6 +85,9 @@ extension Ticket {
     }
 
     private mutating func move(to newState: TicketState, now: Date) {
+        // A ping lasts for one wait: it goes once Nina has the reply in hand, or puts the ticket away.
+        let replied = state == .needsYou || state == .blocked
+        if [.done, .later, .parked].contains(newState) || (replied && newState == .working) { pingMe = nil }
         if newState != state { stateSince = now }
         state = newState
         laterUntil = nil

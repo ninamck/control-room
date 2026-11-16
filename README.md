@@ -26,6 +26,8 @@ That builds Control Room, installs it in your Applications folder (~/Application
 
 - The face sits in the notch on the MacBook screen. Click it to open the panel; hovering does nothing.
 - Control-Option-C opens and closes the panel from anywhere. Escape closes it.
+- Ping me: press Control-Option-P while you're in a chat (or click PING on a working row) and Control Room nudges you once when that chat replies: a sound, and the face, even if you've switched the face off. The ping clears once you've dealt with the reply.
+- Gone quiet: a chat that says it's working but hasn't been heard from for 30 minutes stops counting as Working and shows as "gone quiet" instead. New activity brings it back; after a day it's cleared away. Devin and tickets you added yourself never go quiet.
 - Control-Option-N, or Hide face / Show face on the board, switches the face off and on. While it's off nothing shows in the notch or menu bar, but tickets keep updating, so switching it back on shows where things stand. Control-Option-C opens the board while it's off.
 - When the lid is closed, or you're working on another screen, the face also appears in the menu bar. Click it there.
 - The board: press OPEN BOARD at the bottom of the panel, or open Control Room again from Finder or Spotlight. Big counts on the left, cards for everything waiting on you, a grid of what's still working, and "see all" for what's done today. While it's open, Control Room shows in the Dock; close it and the companion carries on.

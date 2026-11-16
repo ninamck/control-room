@@ -136,6 +136,9 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     /// When that activity was last reported.
     public var activityAt: Date?
 
+    /// Nina asked to be nudged when this one replies. Clears once she's dealt with the reply.
+    public var pingMe: Bool?
+
     /// While in later: when it comes back.
     public var laterUntil: Date?
     /// While in later: the needs_you clock to restore, so waiting time keeps counting.
@@ -178,6 +181,15 @@ public struct Ticket: Codable, Equatable, Identifiable, Sendable {
     public var claudeSessionID: String? {
         guard let id = externalId, id.hasPrefix("claude-code:") else { return nil }
         return String(id.dropFirst("claude-code:".count))
+    }
+
+    /// The last time the agent was heard from.
+    public var lastHeard: Date { max(activityAt ?? stateSince, stateSince) }
+
+    /// Working, but nothing heard for a while: most likely closed or abandoned without the tool saying so.
+    /// Devin is asked directly and manual tickets are Nina's own, so only feeds that report as they go can go quiet.
+    public func goneQuiet(at now: Date) -> Bool {
+        state == .working && source == .automatic && tool != .devin && now.timeIntervalSince(lastHeard) >= Rules.quietAfter
     }
 
     /// Short id for typing at the command line.

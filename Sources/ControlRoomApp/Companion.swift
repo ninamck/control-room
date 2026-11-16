@@ -35,18 +35,22 @@ final class Companion: NSObject, NSWindowDelegate {
         Timer.publish(every: 2, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in self?.updateStatusItem() }
             .store(in: &watchers)
+        // Also catches the face being switched on or off, or a pinged chat coming back while it's off.
         model.objectWillChange
-            .sink { [weak self] in DispatchQueue.main.async { self?.layout() } }
+            .sink { [weak self] in DispatchQueue.main.async { self?.showOrHide(); self?.layout() } }
             .store(in: &watchers)
-        model.$companionOn
-            .dropFirst()
-            .sink { [weak self] _ in DispatchQueue.main.async { self?.showOrHide() } }
-            .store(in: &watchers)
+        model.toast = { [weak self] text in self?.showToast(text) }
         hotKeys = [
             // Control-Option-C opens the panel from the keyboard.
             HotKey(keyCode: UInt32(kVK_ANSI_C), modifiers: [.control, .option]) { [weak self] in self?.toggleFromKeyboard() },
             // Control-Option-N switches the companion on and off.
-            HotKey(keyCode: UInt32(kVK_ANSI_N), modifiers: [.control, .option]) { [weak self] in self?.model.companionOn.toggle() },
+            HotKey(keyCode: UInt32(kVK_ANSI_N), modifiers: [.control, .option]) { [weak self] in
+                guard let self else { return }
+                self.model.companionOn.toggle()
+                self.showToast(self.model.companionOn ? "Face on" : "Face off. Control-Option-N brings it back")
+            },
+            // Control-Option-P: ping me when the chat I'm in replies.
+            HotKey(keyCode: UInt32(kVK_ANSI_P), modifiers: [.control, .option]) { [weak self] in self?.model.pingFrontmost() },
         ]
     }
 
@@ -65,7 +69,8 @@ final class Companion: NSObject, NSWindowDelegate {
             window.delegate = self
             notch = (window, host, screen, size)
             layout()
-            if model.companionOn { window.orderFrontRegardless() }
+            showing = model.faceShowing
+            if showing { window.orderFrontRegardless() }
         }
         updateStatusItem()
     }
@@ -81,9 +86,15 @@ final class Companion: NSObject, NSWindowDelegate {
         notch.host.rootView = notchContent(notch.size, expanded: expanded)
     }
 
-    /// Switched off: everything goes away, though tickets keep updating behind it. Back on: as it was.
+    /// Whether the face is up, so showOrHide only acts when that changes.
+    private var showing = true
+
+    /// Switched off: everything goes away, though tickets keep updating behind it. Back on, or a pinged
+    /// chat replying while it's off: as it was.
     private func showOrHide() {
-        if model.companionOn {
+        guard model.faceShowing != showing else { return }
+        showing = model.faceShowing
+        if showing {
             notch?.window.orderFrontRegardless()
             layout()
         } else {
@@ -95,7 +106,7 @@ final class Companion: NSObject, NSWindowDelegate {
 
     /// Menu bar face when there's no notch, or when the notch isn't on the screen Nina is using.
     private func updateStatusItem() {
-        let wanted = model.companionOn && (notch == nil || NSScreen.main != notch?.screen)
+        let wanted = model.faceShowing && (notch == nil || NSScreen.main != notch?.screen)
         if wanted && statusItem == nil {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             item.button?.target = self
@@ -182,7 +193,7 @@ final class Companion: NSObject, NSWindowDelegate {
 
     private func toggleFromKeyboard() {
         // Switched off, the shortcut opens the board instead, where the switch is.
-        guard model.companionOn else { model.openBoard(); return }
+        guard model.faceShowing else { model.openBoard(); return }
         if model.panelOpen { collapse(); return }
         if notch != nil && NSScreen.main == notch?.screen {
             open(pinned: true)
@@ -196,6 +207,36 @@ final class Companion: NSObject, NSWindowDelegate {
         if pinned && !pointerIsInside { collapse() }
     }
 
+
+    // MARK: Toast
+
+    private var toastWindow: CompanionPanel?
+    private var toastHide: DispatchWorkItem?
+
+    /// A short black label just under the notch (or the menu bar), gone after two seconds.
+    private func showToast(_ text: String) {
+        guard let screen = notch?.screen ?? NSScreen.main else { return }
+        let host = NSHostingView(rootView: Text(text)
+            .font(Theme.font(13, .bold))
+            .foregroundStyle(Theme.white)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Theme.ink)
+            .accessibilityLabel(text))
+        let window = toastWindow ?? CompanionPanel(content: host)
+        window.contentView = host
+        window.ignoresMouseEvents = true
+        toastWindow = window
+        let size = host.fittingSize
+        let top = screen.frame.maxY - (notch?.size.height ?? NSStatusBar.system.thickness) - 8
+        window.setFrame(NSRect(x: screen.frame.midX - size.width / 2, y: top - size.height, width: size.width, height: size.height), display: true)
+        window.orderFrontRegardless()
+        NSAccessibility.post(element: host, notification: .announcementRequested,
+                             userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+        toastHide?.cancel()
+        let hide = DispatchWorkItem { [weak window] in window?.orderOut(nil) }
+        toastHide = hide
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: hide)
+    }
 
     // MARK: Sizing
 
