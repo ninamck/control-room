@@ -173,21 +173,37 @@ final class AppModel: ObservableObject {
         try? store.update { tickets, _ in
             if let i = tickets.firstIndex(where: { $0.id == ticket.id }) { tickets[i].pingMe = on ? true : nil }
         }
-        toast(on ? "I'll ping you when it replies" : "No ping for that one")
+        EventLog.note("ping \(on ? "on" : "off") \(ticket.externalId ?? ticket.id)")
+        // Names the chat, so Nina can see it picked the right one.
+        toast(on ? "Pinging: \(ticket.contextName.isEmpty ? ticket.title : ticket.contextName)" : "No ping for that one")
     }
 
     /// Asked for from the keyboard: ping the chat Nina is in. That's the most recently active working chat
     /// in the app in front. Sent a moment ago and not seen yet? The next one to start there gets it.
     func pingFrontmost() {
-        guard let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else { return }
+        guard let front = Self.appInFront(), let app = front.bundleIdentifier else { return }
+        EventLog.note("ping shortcut in \(app)")
         let here = tickets.filter { $0.state == .working && Self.app(of: $0) == app }
             .max { $0.lastHeard < $1.lastHeard }
         if let here {
             if here.pingMe != true { togglePing(here) } else { toast("Already pinging this one") }
         } else {
-            pendingPing = (app, Date().addingTimeInterval(20))
-            toast("I'll ping you when it replies")
+            pendingPing = (app, Date().addingTimeInterval(60))
+            toast("Pinging the next chat to start in \(front.localizedName ?? "this app")")
         }
+    }
+
+    /// The app whose window is frontmost on screen. Asked of the window list rather than macOS's
+    /// "frontmost app", which can lag behind for an app like Control Room that sits in the background.
+    static func appInFront() -> NSRunningApplication? {
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        let mine = ProcessInfo.processInfo.processIdentifier
+        for window in windows where (window[kCGWindowLayer as String] as? Int) == 0 {
+            guard let pid = window[kCGWindowOwnerPID as String] as? pid_t, pid != mine,
+                  let app = NSRunningApplication(processIdentifier: pid) else { continue }
+            return app
+        }
+        return NSWorkspace.shared.frontmostApplication
     }
 
     /// An app whose next new working chat should be pinged, and until when.
@@ -216,12 +232,17 @@ final class AppModel: ObservableObject {
                 try? store.update { tickets, _ in
                     if let i = tickets.firstIndex(where: { $0.id == started.id }) { tickets[i].pingMe = true }
                 }
+                EventLog.note("ping on \(started.externalId ?? started.id) (started after the shortcut)")
+                toast("Pinging: \(started.contextName.isEmpty ? started.title : started.contextName)")
             }
         }
         let replied = tickets.filter { t in
             t.pingMe == true && (t.state == .needsYou || t.state == .blocked) && old[t.id].map { $0.state == .working } == true
         }
-        if !replied.isEmpty { NSSound(named: "Glass")?.play() }
+        if !replied.isEmpty {
+            NSSound(named: "Glass")?.play()
+            for t in replied { EventLog.note("ping nudge \(t.externalId ?? t.id)") }
+        }
     }
 
     var workingCount: Int { working.count }

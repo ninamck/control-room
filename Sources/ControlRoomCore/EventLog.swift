@@ -2,7 +2,7 @@ import Foundation
 
 /// Keeps the last 300 feed events (time, event name, tool name only, never message text)
 /// in feed-events.log, so a feed that misbehaves can be diagnosed.
-enum EventLog {
+public enum EventLog {
     private static let lock = NSLock()
     private static let limit = 300
 
@@ -15,7 +15,15 @@ enum EventLog {
         if let session = payload["session_id"] as? String, payload["conversation_id"] == nil { line += " session=\(session.prefix(8))" }
         if let type = payload["notification_type"] as? String { line += " type=\(type)" }
         if let note { line += " (\(note))" }
+        write(line)
+    }
 
+    /// Something the app itself did, like setting a ping. Ids and app names only.
+    public static func note(_ text: String) {
+        write("\(ISO8601DateFormatter().string(from: Date())) app \(text)")
+    }
+
+    private static func write(_ line: String) {
         lock.lock()
         defer { lock.unlock() }
         let url = Config.directory.appendingPathComponent("feed-events.log")
