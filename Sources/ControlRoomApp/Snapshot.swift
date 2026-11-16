@@ -81,6 +81,9 @@ enum Snapshot {
             }
         }
         save(faces.padding(32).background(Theme.lavender), to: folder.appendingPathComponent("faces.png"))
+        // The collapsed notch at a MacBook's notch size.
+        save(NotchView(model: model, growth: Growth(), size: NotchSize(width: 185, height: 38), expanded: false, openFromClick: {})
+                .padding(24).background(Theme.lavender), to: folder.appendingPathComponent("notch.png"))
         try? FileManager.default.removeItem(at: file)
     }
 

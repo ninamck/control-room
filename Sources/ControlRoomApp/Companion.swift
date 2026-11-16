@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import Combine
 import SwiftUI
 
@@ -7,10 +8,10 @@ import SwiftUI
 @MainActor
 final class Companion: NSObject, NSWindowDelegate {
     private let model: AppModel
-    private var notch: (window: CompanionPanel, host: HoverHostingView, screen: NSScreen, size: NotchSize)?
+    private var notch: (window: CompanionPanel, host: CompanionHostingView, screen: NSScreen, size: NotchSize)?
     private var statusItem: NSStatusItem?
-    private var menuPanel: (window: CompanionPanel, host: HoverHostingView)?
-    /// Opened by a click or the shortcut, so it stays open until dismissed. Hover-opened panels close when the pointer leaves.
+    private var menuPanel: (window: CompanionPanel, host: CompanionHostingView)?
+    /// Opened by a click or the shortcut: stays open until Nina clicks elsewhere or presses Escape.
     private var pinned = false
     /// Whether the notch window is showing the panel rather than just the face.
     private var notchExpanded = false
@@ -18,9 +19,8 @@ final class Companion: NSObject, NSWindowDelegate {
     private let growth = Growth()
     /// Swaps back to the face once the shrink animation has finished.
     private var pendingShrink: DispatchWorkItem?
-    private var pendingCollapse: DispatchWorkItem?
     private var watchers: Set<AnyCancellable> = []
-    private var hotKey: HotKey?
+    private var hotKeys: [HotKey] = []
 
     init(model: AppModel) {
         self.model = model
@@ -38,8 +38,16 @@ final class Companion: NSObject, NSWindowDelegate {
         model.objectWillChange
             .sink { [weak self] in DispatchQueue.main.async { self?.layout() } }
             .store(in: &watchers)
-        // Control-Option-C opens the panel from the keyboard.
-        hotKey = HotKey(keyCode: 8, modifiers: [.control, .option]) { [weak self] in self?.toggleFromKeyboard() }
+        model.$companionOn
+            .dropFirst()
+            .sink { [weak self] _ in DispatchQueue.main.async { self?.showOrHide() } }
+            .store(in: &watchers)
+        hotKeys = [
+            // Control-Option-C opens the panel from the keyboard.
+            HotKey(keyCode: UInt32(kVK_ANSI_C), modifiers: [.control, .option]) { [weak self] in self?.toggleFromKeyboard() },
+            // Control-Option-N switches the companion on and off.
+            HotKey(keyCode: UInt32(kVK_ANSI_N), modifiers: [.control, .option]) { [weak self] in self?.model.companionOn.toggle() },
+        ]
     }
 
     // MARK: Placement
@@ -52,14 +60,12 @@ final class Companion: NSObject, NSWindowDelegate {
         notch = nil
         if let screen = notchScreen {
             let size = NotchSize(screen: screen)
-            let host = HoverHostingView(rootView: notchContent(size, expanded: false))
+            let host = CompanionHostingView(rootView: notchContent(size, expanded: false))
             let window = CompanionPanel(content: host)
             window.delegate = self
-            host.onEnter = { [weak self] in self?.pointerEntered() }
-            host.onExit = { [weak self] in self?.pointerLeft() }
             notch = (window, host, screen, size)
             layout()
-            window.orderFrontRegardless()
+            if model.companionOn { window.orderFrontRegardless() }
         }
         updateStatusItem()
     }
@@ -75,9 +81,21 @@ final class Companion: NSObject, NSWindowDelegate {
         notch.host.rootView = notchContent(notch.size, expanded: expanded)
     }
 
+    /// Switched off: everything goes away, though tickets keep updating behind it. Back on: as it was.
+    private func showOrHide() {
+        if model.companionOn {
+            notch?.window.orderFrontRegardless()
+            layout()
+        } else {
+            collapse()
+            notch?.window.orderOut(nil)
+        }
+        updateStatusItem()
+    }
+
     /// Menu bar face when there's no notch, or when the notch isn't on the screen Nina is using.
     private func updateStatusItem() {
-        let wanted = notch == nil || NSScreen.main != notch?.screen
+        let wanted = model.companionOn && (notch == nil || NSScreen.main != notch?.screen)
         if wanted && statusItem == nil {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             item.button?.target = self
@@ -92,21 +110,6 @@ final class Companion: NSObject, NSWindowDelegate {
     }
 
     // MARK: Open and close
-
-    private func pointerEntered() {
-        pendingCollapse?.cancel()
-        if !model.panelOpen { open(pinned: false) }
-    }
-
-    private func pointerLeft() {
-        guard !pinned else { return }
-        let work = DispatchWorkItem { [weak self] in
-            guard let self, !self.pinned, !self.pointerIsInside else { return }
-            self.collapse()
-        }
-        pendingCollapse = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
-    }
 
     private var pointerIsInside: Bool {
         let p = NSEvent.mouseLocation
@@ -129,7 +132,6 @@ final class Companion: NSObject, NSWindowDelegate {
     }
 
     func collapse() {
-        pendingCollapse?.cancel()
         pinned = false
         if model.panelOpen { model.panelOpen = false }
         if notchExpanded {
@@ -169,7 +171,7 @@ final class Companion: NSObject, NSWindowDelegate {
 
     @objc private func statusItemClicked() {
         if menuPanel != nil { collapse(); return }
-        let host = HoverHostingView(rootView: AnyView(PanelView(model: model).padding(.trailing, 8).padding(.bottom, 8)))
+        let host = CompanionHostingView(rootView: AnyView(PanelView(model: model).padding(.trailing, 8).padding(.bottom, 8)))
         let window = CompanionPanel(content: host)
         window.delegate = self
         menuPanel = (window, host)
@@ -179,6 +181,8 @@ final class Companion: NSObject, NSWindowDelegate {
     }
 
     private func toggleFromKeyboard() {
+        // Switched off, the shortcut opens the board instead, where the switch is.
+        guard model.companionOn else { model.openBoard(); return }
         if model.panelOpen { collapse(); return }
         if notch != nil && NSScreen.main == notch?.screen {
             open(pinned: true)
@@ -192,10 +196,6 @@ final class Companion: NSObject, NSWindowDelegate {
         if pinned && !pointerIsInside { collapse() }
     }
 
-    // Clicking into a hover-opened panel (to type, say) keeps it open.
-    func windowDidBecomeKey(_ notification: Notification) {
-        if model.panelOpen { pinned = true }
-    }
 
     // MARK: Sizing
 
@@ -238,6 +238,13 @@ struct NotchSize {
     /// Black space either side of the notch; the face sits in the right one.
     var ear: CGFloat { face + 14 }
     var collapsedWidth: CGFloat { width + ear * 2 }
+    /// The notch's lower corners, curved like the screen's own notch (Nina's call: square read as too harsh).
+    var cornerRadius: CGFloat { round(height * 0.3) }
+
+    init(width: CGFloat, height: CGFloat) {
+        self.width = width
+        self.height = height
+    }
 
     init(screen: NSScreen) {
         height = screen.safeAreaInsets.top
@@ -277,7 +284,8 @@ struct NotchView: View {
             // Starts as a notch-sized window onto the panel and grows to show all of it.
             .mask(alignment: .topLeading) {
                 GeometryReader { full in
-                    Rectangle()
+                    UnevenRoundedRectangle(bottomLeadingRadius: growth.grown ? 0 : size.cornerRadius,
+                                           bottomTrailingRadius: growth.grown ? 0 : size.cornerRadius)
                         .frame(width: growth.grown ? full.size.width : size.collapsedWidth,
                                height: growth.grown ? full.size.height : size.height)
                         .offset(x: growth.grown ? 0 : PanelView.width / 2 - size.collapsedWidth / 2)
@@ -292,6 +300,7 @@ struct NotchView: View {
                         .background(Theme.ink)
                 }
                 .frame(height: size.height)
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: size.cornerRadius, bottomTrailingRadius: size.cornerRadius))
             }
             .buttonStyle(.plain)
             .focusEffectDisabled()
@@ -322,20 +331,7 @@ final class CompanionPanel: NSPanel {
     }
 }
 
-/// Hosting view that reports the pointer coming and going, even when the app isn't active.
-final class HoverHostingView: NSHostingView<AnyView> {
-    var onEnter: (() -> Void)?
-    var onExit: (() -> Void)?
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        trackingAreas.filter { $0.owner === self }.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
-    }
-
-    // A click on a panel that opened on hover should press the button, not just focus the panel.
+/// Hosting view whose first click presses the face, even when Control Room isn't the active app.
+final class CompanionHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-
-    override func mouseEntered(with event: NSEvent) { onEnter?() }
-    override func mouseExited(with event: NSEvent) { onExit?() }
 }

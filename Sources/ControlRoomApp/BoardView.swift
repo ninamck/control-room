@@ -51,6 +51,9 @@ struct BoardView: View {
                 .padding(.trailing, 4)
             ShadowButton(title: adding ? "CLOSE" : "+ ADD") { adding.toggle() }
                 .accessibilityLabel(adding ? "Close add a ticket" : "Add a ticket")
+            ShadowButton(title: model.companionOn ? "HIDE FACE" : "SHOW FACE") { model.companionOn.toggle() }
+                .accessibilityLabel(model.companionOn ? "Hide the face in the notch" : "Show the face in the notch")
+                .help("Control-Option-N")
             ShadowButton(title: "END OF DAY") { model.openEndOfDay() }
             ShadowButton(title: "HAND OFF", fill: Theme.yellow) { model.openHandOff(nil) }
         }

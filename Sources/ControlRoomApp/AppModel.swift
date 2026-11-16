@@ -11,6 +11,11 @@ final class AppModel: ObservableObject {
         didSet { if panelOpen != oldValue { updateSecondHand() } }
     }
     /// Whether the board window is on screen.
+    /// Whether the companion shows in the notch (or menu bar). Off, it keeps track of everything but shows
+    /// nothing until Nina switches it back on, from the board or with Control-Option-N.
+    @Published var companionOn: Bool {
+        didSet { defaults.set(companionOn, forKey: "companionOn") }
+    }
     @Published var boardOpen = false {
         didSet { if boardOpen != oldValue { updateSecondHand() } }
     }
@@ -69,6 +74,7 @@ final class AppModel: ObservableObject {
         self.defaults = defaults
         self.watchList = watchList
         quietUntil = defaults.object(forKey: "quietUntil") as? Date
+        companionOn = defaults.object(forKey: "companionOn") as? Bool ?? true
         store.onChange = { [weak self] in
             DispatchQueue.main.async { self?.reload() }
         }

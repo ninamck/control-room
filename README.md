@@ -24,8 +24,9 @@ Needs Xcode (already on Nina's Mac). In Terminal, from this folder:
 
 That builds Control Room, installs it in your Applications folder (~/Applications), and opens it. It starts by itself when you log in (switch that off in System Settings → General → Login Items). Open it any time from Spotlight.
 
-- The face sits in the notch on the MacBook screen. Hover over it or click it to open the panel.
+- The face sits in the notch on the MacBook screen. Click it to open the panel; hovering does nothing.
 - Control-Option-C opens and closes the panel from anywhere. Escape closes it.
+- Control-Option-N, or Hide face / Show face on the board, switches the face off and on. While it's off nothing shows in the notch or menu bar, but tickets keep updating, so switching it back on shows where things stand. Control-Option-C opens the board while it's off.
 - When the lid is closed, or you're working on another screen, the face also appears in the menu bar. Click it there.
 - The board: press OPEN BOARD at the bottom of the panel, or open Control Room again from Finder or Spotlight. Big counts on the left, cards for everything waiting on you, a grid of what's still working, and "see all" for what's done today. While it's open, Control Room shows in the Dock; close it and the companion carries on.
 - Quick-add: type "Grok · pricing research" and press Return. Paste a link and it becomes the ticket's Open link. For Cursor, paste the project folder instead (drag the folder from Finder into the field): Open then brings that project's Cursor window to the front. Cursor tickets never open cursor.com. If you don't name a tool, pick one from the squares that appear.
