@@ -86,7 +86,9 @@ enum Face: String, CaseIterable {
                 features.addPath(Path(rect).applying(angle == 0 ? .identity : turn).applying(CGAffineTransform(scaleX: unit, y: unit)))
             }
         }
-        return (Path(CGRect(x: 0, y: 0, width: size, height: size)), features)
+        // Softened corners (Nina's call, like the notch): a fifth of the side, so the face reads as a tile.
+        let ground = Path(roundedRect: CGRect(x: 0, y: 0, width: size, height: size), cornerRadius: size * 0.2, style: .continuous)
+        return (ground, features)
     }
 
     /// For the menu bar fallback.

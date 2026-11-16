@@ -39,4 +39,4 @@ Product calls Nina has made beyond SPEC.md. Newest last.
 - **Snapshots use a scratch watch list.** Rendering the board once wrote its sample schedules into the real watch list, which showed up as duplicate rows and two fake Morning brief cards; those were removed.
 - **The panel opens on a click only, not on hover** (Nina: it opened too easily). SPEC section 6 says hover or click; hover is gone.
 - **The face can be switched off** (Nina wants it only when she wants it). Control-Option-N or Hide face / Show face on the board. Off, nothing shows in the notch or menu bar; tracking carries on. It remembers the setting across restarts.
-- **The notch's lower corners are curved**, like the screen's own notch (Nina: square corners looked too harsh). The one exception to zero corner radius; the face, panel and everything else stay square.
+- **The notch's lower corners are curved**, like the screen's own notch (Nina: square corners looked too harsh). The faces have softened corners too (a fifth of their side), wherever they appear. These are the only exceptions to zero corner radius; the panel and everything else stay square.
